@@ -47,4 +47,49 @@ describe("POST /api/nearby", () => {
     expect(json.error).not.toContain("Places API error");
     expect(json.error).toBe("Could not reach the restaurant service. Please try again.");
   });
+
+  // FIX 2: NaN/Infinity/out-of-range coordinate validation
+  it("returns 400 when lat is NaN", async () => {
+    const res = await POST(makeReq({ lat: NaN, lng: 103.8 }, "10.0.0.1"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("lat and lng must be valid coordinates.");
+  });
+
+  it("returns 400 when lng is Infinity", async () => {
+    const res = await POST(makeReq({ lat: 1.3, lng: Infinity }, "10.0.0.2"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("lat and lng must be valid coordinates.");
+  });
+
+  it("returns 400 when lat is out of range (200)", async () => {
+    const res = await POST(makeReq({ lat: 200, lng: 103.8 }, "10.0.0.3"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("lat and lng must be valid coordinates.");
+  });
+
+  it("returns 400 when lng is out of range (-500)", async () => {
+    const res = await POST(makeReq({ lat: 1.3, lng: -500 }, "10.0.0.4"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("lat and lng must be valid coordinates.");
+  });
+
+  // FIX 2: non-finite radiusMeters validation
+  it("returns 400 when radiusMeters is NaN with valid lat/lng", async () => {
+    const res = await POST(makeReq({ lat: 1.3, lng: 103.8, radiusMeters: NaN }, "10.0.0.5"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("radiusMeters must be a finite number.");
+  });
+
+  // FIX 2: radius clamping — out-of-range radiusMeters still returns 200, clamped to 5000
+  it("clamps radiusMeters to 5000 when provided value exceeds maximum", async () => {
+    vi.mocked(fetchNearby).mockResolvedValue([]);
+    const res = await POST(makeReq({ lat: 1.3, lng: 103.8, radiusMeters: 999999 }, "10.0.0.6"));
+    expect(res.status).toBe(200);
+    expect(vi.mocked(fetchNearby).mock.calls[0][0].radiusMeters).toBe(5000);
+  });
 });
