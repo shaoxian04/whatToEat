@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createSupabaseVoteRepository } from "@/lib/vote/supabase-repository";
 import type { VoteRepository } from "@/lib/vote/repository";
@@ -14,11 +15,6 @@ function getRepository(): VoteRepository {
   return createSupabaseVoteRepository(createServiceClient());
 }
 
-function clientIp(req: Request): string {
-  return req.headers.get("x-real-ip")?.trim()
-    || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || "no-ip";
-}
 
 export async function POST(
   req: Request,
