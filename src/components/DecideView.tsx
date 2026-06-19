@@ -39,7 +39,10 @@ export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random
     if (autoStartCoords) void start(autoStartCoords);
   }, [autoStartCoords, start]);
 
-  const again = () => setCurrent(pickRandom(pool, current?.placeId, rng));
+  const again = useCallback(
+    () => setCurrent(pickRandom(pool, current?.placeId, rng)),
+    [pool, current, rng],
+  );
 
   if (status === "loading") return <p className="p-6">Finding places near you…</p>;
   if (status === "empty") return <p className="p-6">No restaurants found nearby. Try moving or widening your search.</p>;
