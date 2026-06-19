@@ -26,6 +26,11 @@ function mapVote(r: Record<string, unknown>): Vote {
   };
 }
 
+/**
+ * REQUIRES a service-role Supabase client. This repository reads `session_secrets`
+ * and performs writes that bypass RLS; an anon client will silently fail auth on
+ * those operations.
+ */
 export function createSupabaseVoteRepository(client: SupabaseClient): VoteRepository {
   return {
     async createSession(input: CreateSessionInput) {
@@ -48,8 +53,10 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
     async getSession(sessionId: string): Promise<SessionState | null> {
       const { data: s } = await client.from("sessions").select().eq("id", sessionId).maybeSingle();
       if (!s) return null;
-      const { data: opts } = await client.from("session_options").select().eq("session_id", sessionId);
-      const { data: vts } = await client.from("votes").select().eq("session_id", sessionId);
+      const { data: opts, error: optsErr } = await client.from("session_options").select().eq("session_id", sessionId);
+      if (optsErr) throw new Error(`fetch options failed: ${optsErr.message}`);
+      const { data: vts, error: vtsErr } = await client.from("votes").select().eq("session_id", sessionId);
+      if (vtsErr) throw new Error(`fetch votes failed: ${vtsErr.message}`);
       return {
         session: mapSession(s),
         options: (opts ?? []).map(mapOption),
@@ -85,9 +92,13 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
         return { error: "forbidden" };
       }
       if (s.status === "closed") return { error: "already_closed" };
-      const state = await this.getSession(sessionId);
-      if (!state) return { error: "not_found" };
-      const winnerId = computeWinner(state.options, state.votes);
+      const { data: optRows, error: optsErr } = await client.from("session_options").select().eq("session_id", sessionId);
+      if (optsErr) throw new Error(`fetch options failed: ${optsErr.message}`);
+      const { data: voteRows, error: vtsErr } = await client.from("votes").select().eq("session_id", sessionId);
+      if (vtsErr) throw new Error(`fetch votes failed: ${vtsErr.message}`);
+      const options = (optRows ?? []).map(mapOption);
+      const votes = (voteRows ?? []).map(mapVote);
+      const winnerId = computeWinner(options, votes);
       const { error } = await client.from("sessions")
         .update({ status: "closed", winner_option_id: winnerId }).eq("id", sessionId);
       if (error) throw new Error("close failed");

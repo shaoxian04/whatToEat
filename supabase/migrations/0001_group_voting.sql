@@ -15,6 +15,7 @@ create table if not exists session_secrets (
 );
 alter table session_secrets enable row level security;
 -- NO anon policies: only the service-role (bypasses RLS) may read/write host tokens.
+revoke all on session_secrets from anon, authenticated;
 
 create table if not exists session_options (
   id uuid primary key default gen_random_uuid(),
