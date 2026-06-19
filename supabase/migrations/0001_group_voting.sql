@@ -30,6 +30,13 @@ create table if not exists votes (
 create index if not exists idx_options_session on session_options(session_id);
 create index if not exists idx_votes_session on votes(session_id);
 
+-- winner references a real option (added post-creation: session_options is defined after sessions)
+alter table sessions
+  add constraint sessions_winner_option_fk
+  foreign key (winner_option_id) references session_options(id) on delete set null;
+
+create index if not exists idx_votes_option on votes(option_id);
+
 -- Row Level Security: anonymous users may READ only. No anon write policies exist,
 -- so INSERT/UPDATE/DELETE are denied for anon. The service-role key bypasses RLS.
 alter table sessions enable row level security;
