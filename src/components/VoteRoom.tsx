@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { VoteSession, VoteOption, Vote } from "@/lib/vote/types";
 import { tallyVotes } from "@/lib/vote/winner";
 import { useSessionVotes } from "@/hooks/useSessionVotes";
+import { BackHome } from "@/components/BackHome";
 
 interface Props {
   sessionId: string;
@@ -29,44 +31,105 @@ export function VoteRoom({
   const closed = live.status === "closed";
   const winner = options.find((o) => o.id === live.winnerOptionId);
 
+  const [shareUrl, setShareUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") setShareUrl(window.location.href);
+  }, []);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(t);
+  }, [copied]);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-xl font-bold">{initialSession.hostName}&apos;s lunch vote</h1>
-      <p className="text-sm text-gray-500">Voting as {voterName}</p>
+    <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
+      <BackHome />
+
+      <header>
+        <h1 className="font-display text-2xl font-extrabold leading-tight">
+          {initialSession.hostName}&apos;s lunch vote
+        </h1>
+        <p className="mt-1 font-mono text-xs text-ink-soft">Voting as {voterName}</p>
+      </header>
+
+      {!closed && shareUrl && (
+        <div className="tile flex flex-col gap-2 bg-mustard/15 p-3">
+          <p className="font-mono text-xs font-bold uppercase tracking-widest text-mustard-ink">
+            Invite the crew →
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="Shareable vote link"
+              className="tile-sm min-w-0 flex-1 truncate bg-white px-2 py-1.5 font-mono text-xs outline-none"
+            />
+            <button
+              onClick={copyLink}
+              className="tile-sm tile-press shrink-0 bg-mustard px-3 py-1.5 text-sm font-bold text-ink"
+            >
+              {copied ? "✓ Copied" : "Copy link"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {closed && (
-        <p className="rounded-xl bg-green-50 p-3 font-semibold text-green-700">
-          Winner: {winner ? winner.name : "No winner (all vetoed)"}
+        <p className="tile bg-herb/15 p-4 font-display text-lg font-bold text-herb-ink">
+          🏆 Winner: {winner ? winner.name : "No winner (all vetoed)"}
         </p>
       )}
 
-      {options.map((o) => (
-        <div key={o.id} className="flex items-center justify-between rounded-2xl border p-4">
-          <span className="font-medium">{o.name}</span>
-          <span className="flex items-center gap-3 text-sm">
-            <span data-testid={`up-${o.id}`}>👍 {tally[o.id]?.up ?? 0}</span>
-            <span data-testid={`veto-${o.id}`}>🚫 {tally[o.id]?.veto ?? 0}</span>
+      <div className="flex flex-col gap-3">
+        {options.map((o) => (
+          <div key={o.id} className="tile bg-white p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate font-display text-lg font-bold">{o.name}</span>
+              <span className="flex shrink-0 items-center gap-2 font-mono text-sm font-semibold">
+                <span data-testid={`up-${o.id}`}>👍 {tally[o.id]?.up ?? 0}</span>
+                <span data-testid={`veto-${o.id}`}>🚫 {tally[o.id]?.veto ?? 0}</span>
+              </span>
+            </div>
             {!closed && (
-              <>
-                <button onClick={() => onCast(o.id, "up")}
-                  className="rounded bg-green-600 px-2 py-1 text-white" aria-label={`Upvote ${o.name}`}>
-                  Up
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => onCast(o.id, "up")}
+                  aria-label={`Upvote ${o.name}`}
+                  className="tile-sm tile-press flex-1 bg-herb/15 py-2 text-sm font-bold text-herb-ink"
+                >
+                  👍 Up
                 </button>
-                <button onClick={() => onCast(o.id, "veto")}
-                  className="rounded bg-red-600 px-2 py-1 text-white" aria-label={`Veto ${o.name}`}>
-                  Veto
+                <button
+                  onClick={() => onCast(o.id, "veto")}
+                  aria-label={`Veto ${o.name}`}
+                  className="tile-sm tile-press flex-1 bg-tomato/15 py-2 text-sm font-bold text-tomato-ink"
+                >
+                  🚫 Veto
                 </button>
-              </>
+              </div>
             )}
-          </span>
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
 
       {!closed && canClose && (
-        <button onClick={onClose} className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white">
+        <button
+          onClick={onClose}
+          className="tile tile-press bg-tomato px-4 py-3 font-display text-lg font-bold text-ink"
+        >
           Close voting and pick winner
         </button>
       )}
-    </div>
+    </main>
   );
 }

@@ -9,7 +9,7 @@ const SESSION = {
   votes: [],
 };
 
-test("create a quick vote, join, and cast a ballot", async ({ page }) => {
+test.beforeEach(async ({ page }) => {
   await page.route("**/api/sessions", (route) =>
     route.fulfill({
       status: 201,
@@ -28,7 +28,9 @@ test("create a quick vote, join, and cast a ballot", async ({ page }) => {
       contentType: "application/json",
       body: JSON.stringify({ ok: true }),
     }));
+});
 
+test("host creates a vote and lands in the room with a shareable link", async ({ page }) => {
   await page.goto("/vote");
   await page.getByLabel(/your name/i).fill("Sam");
   const opts = page.getByLabel(/option/i);
@@ -36,13 +38,21 @@ test("create a quick vote, join, and cast a ballot", async ({ page }) => {
   await opts.nth(1).fill("Pizza");
   await page.getByRole("button", { name: /start vote/i }).click();
 
-  // Now on /vote/sess-1 — join then vote
+  // Host is taken straight into the room — no second "enter your name / join" step.
+  await expect(page.getByRole("button", { name: /copy link/i })).toBeVisible();
+  await expect(page.getByText("Sushi")).toBeVisible();
+  await page.getByRole("button", { name: /upvote sushi/i }).click();
+  // Host can close the vote (they hold the host token).
+  await expect(page.getByRole("button", { name: /close voting/i })).toBeVisible();
+});
+
+test("an invited guest joins via the shared link", async ({ page }) => {
+  // A guest opens the link fresh (no stored name) and sees the join screen.
+  await page.goto("/vote/sess-1");
   await expect(page.getByText(/lunch vote/i)).toBeVisible();
-  await page.getByLabel(/your name/i).fill("Sam");
-  await page.getByRole("button", { name: /join/i }).click();
+  await page.getByLabel(/your name/i).fill("Bo");
+  await page.getByRole("button", { name: /^join$/i }).click();
 
   await expect(page.getByText("Sushi")).toBeVisible();
   await page.getByRole("button", { name: /upvote sushi/i }).click();
-  // No assertion error means the cast POST was intercepted and the UI stayed responsive.
-  await expect(page.getByRole("button", { name: /close voting/i })).toBeVisible();
 });

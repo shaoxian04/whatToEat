@@ -3,15 +3,34 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { VoteRoom } from "@/components/VoteRoom";
+import { StatusScreen } from "@/components/StatusScreen";
+import { BackHome } from "@/components/BackHome";
 import type { SessionState } from "@/lib/vote/repository";
 
 export default function VoteRoomPage() {
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
   const [state, setState] = useState<SessionState | null>(null);
-  const [voterName, setVoterName] = useState("");
-  const [joined, setJoined] = useState(false);
+  const [voterName, setVoterName] = useState<string>(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem(`whattoeat:name:${sessionId}`) ?? ""
+      : "",
+  );
+  const [joined, setJoined] = useState<boolean>(() =>
+    typeof window !== "undefined"
+      ? !!localStorage.getItem(`whattoeat:name:${sessionId}`)
+      : false,
+  );
   const [notFound, setNotFound] = useState(false);
+
+  const join = () => {
+    const name = voterName.trim();
+    if (!name) return;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`whattoeat:name:${sessionId}`, name);
+    }
+    setJoined(true);
+  };
 
   useEffect(() => {
     fetch(`/api/sessions/${sessionId}`)
@@ -44,28 +63,34 @@ export default function VoteRoomPage() {
     });
   }, [sessionId, hostToken]);
 
-  if (notFound) return <p className="p-6">This lunch vote has ended or was not found.</p>;
-  if (!state) return <p className="p-6">Loading the vote…</p>;
+  if (notFound) return <StatusScreen emoji="🥡" text="This lunch vote has ended or was not found." />;
+  if (!state) return <StatusScreen emoji="🍜" text="Loading the vote…" />;
 
   if (!joined) {
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-3 p-6">
-        <h1 className="text-xl font-bold">Join {state.session.hostName}&apos;s lunch vote</h1>
-        <label className="text-sm">
-          Your name
-          <input
-            className="mt-1 w-full rounded border px-3 py-2"
-            value={voterName}
-            onChange={(e) => setVoterName(e.target.value)}
-          />
-        </label>
-        <button
-          onClick={() => voterName.trim() && setJoined(true)}
-          className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white"
-        >
-          Join
-        </button>
-      </div>
+      <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
+        <BackHome />
+        <div className="flex flex-1 flex-col justify-center gap-4">
+          <h1 className="font-display text-2xl font-extrabold leading-tight">
+            Join {state.session.hostName}&apos;s lunch vote
+          </h1>
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            Your name
+            <input
+              className="tile-sm bg-white px-3 py-2 font-medium outline-none"
+              placeholder="e.g. Bo"
+              value={voterName}
+              onChange={(e) => setVoterName(e.target.value)}
+            />
+          </label>
+          <button
+            onClick={join}
+            className="tile tile-press bg-herb px-4 py-3 font-display text-lg font-bold text-ink"
+          >
+            Join
+          </button>
+        </div>
+      </main>
     );
   }
 

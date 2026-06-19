@@ -10,21 +10,37 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
     `${encodeURIComponent(restaurant.name)}&query_place_id=${restaurant.placeId}`;
 
   return (
-    <div className="rounded-2xl border border-gray-200 p-4 shadow-sm">
-      <h2 className="text-lg font-semibold">{restaurant.name}</h2>
-      <div className="mt-1 flex flex-wrap gap-2 text-sm text-gray-600">
-        <span>{restaurant.rating !== null ? `★ ${restaurant.rating}` : "No rating"}</span>
-        {restaurant.priceLevel !== null && <span>{priceLabel(restaurant.priceLevel)}</span>}
-        {restaurant.openNow === true && <span className="text-green-600">Open now</span>}
-        {restaurant.openNow === false && <span className="text-red-600">Closed</span>}
+    <div className="ticket p-4">
+      <h2 className="font-display text-lg font-bold leading-tight">{restaurant.name}</h2>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-xs font-medium">
+        <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">
+          {restaurant.rating !== null ? `★ ${restaurant.rating}` : "No rating"}
+        </span>
+        {restaurant.priceLevel !== null && (
+          <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">
+            {priceLabel(restaurant.priceLevel)}
+          </span>
+        )}
+        {restaurant.openNow === true && (
+          <span className="rounded-full border-[1.5px] border-ink bg-herb/20 px-2 py-0.5 text-herb-ink">
+            Open now
+          </span>
+        )}
+        {restaurant.openNow === false && (
+          <span className="rounded-full border-[1.5px] border-ink bg-tomato/15 px-2 py-0.5 text-tomato-ink">
+            Closed
+          </span>
+        )}
       </div>
+
       <a
         href={mapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 inline-block rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white"
+        className="tile-sm tile-press mt-3 inline-flex w-fit items-center gap-1 bg-tomato px-3 py-1.5 text-sm font-bold text-ink"
       >
-        Directions
+        Directions →
       </a>
     </div>
   );

@@ -15,6 +15,8 @@ export default function VoteEntryPage() {
     const { sessionId, hostToken } = (await res.json()) as { sessionId: string; hostToken: string };
     if (typeof window !== "undefined") {
       localStorage.setItem(`whattoeat:host:${sessionId}`, hostToken);
+      // Remember the creator's name so they land in the room already joined.
+      localStorage.setItem(`whattoeat:name:${sessionId}`, hostName);
     }
     router.push(`/vote/${sessionId}`);
   };
