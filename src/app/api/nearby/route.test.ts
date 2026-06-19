@@ -42,6 +42,9 @@ describe("POST /api/nearby", () => {
     const res = await POST(makeReq({ lat: 1, lng: 2, radiusMeters: 500 }, "3.3.3.3"));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBeDefined();
+    expect(typeof json.error).toBe("string");
+    expect(json.error).not.toContain("429");
+    expect(json.error).not.toContain("Places API error");
+    expect(json.error).toBe("Could not reach the restaurant service. Please try again.");
   });
 });
