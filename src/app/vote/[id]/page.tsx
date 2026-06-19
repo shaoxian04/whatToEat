@@ -5,6 +5,15 @@ import { useParams } from "next/navigation";
 import { VoteRoom } from "@/components/VoteRoom";
 import type { SessionState } from "@/lib/vote/repository";
 
+function StatusScreen({ emoji, text }: { emoji: string; text: string }) {
+  return (
+    <main className="placemat flex min-h-screen flex-col items-center justify-center gap-2 px-5 text-center">
+      <p className="text-5xl">{emoji}</p>
+      <p className="font-display text-xl font-bold">{text}</p>
+    </main>
+  );
+}
+
 export default function VoteRoomPage() {
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
@@ -44,28 +53,31 @@ export default function VoteRoomPage() {
     });
   }, [sessionId, hostToken]);
 
-  if (notFound) return <p className="p-6">This lunch vote has ended or was not found.</p>;
-  if (!state) return <p className="p-6">Loading the vote…</p>;
+  if (notFound) return <StatusScreen emoji="🥡" text="This lunch vote has ended or was not found." />;
+  if (!state) return <StatusScreen emoji="🍜" text="Loading the vote…" />;
 
   if (!joined) {
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-3 p-6">
-        <h1 className="text-xl font-bold">Join {state.session.hostName}&apos;s lunch vote</h1>
-        <label className="text-sm">
+      <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-5 py-8">
+        <h1 className="font-display text-2xl font-extrabold leading-tight">
+          Join {state.session.hostName}&apos;s lunch vote
+        </h1>
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           Your name
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className="tile-sm bg-white px-3 py-2 font-medium outline-none"
+            placeholder="e.g. Bo"
             value={voterName}
             onChange={(e) => setVoterName(e.target.value)}
           />
         </label>
         <button
           onClick={() => voterName.trim() && setJoined(true)}
-          className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white"
+          className="tile tile-press bg-herb px-4 py-3 font-display text-lg font-bold text-ink"
         >
           Join
         </button>
-      </div>
+      </main>
     );
   }
 

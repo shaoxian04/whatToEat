@@ -1,26 +1,100 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Lunch Rush design tokens ───────────────────────────────────────────── */
+@theme {
+  --color-paper: #fffbf2;      /* warm clean background */
+  --color-paper-2: #fff3dd;    /* raised warm surface   */
+  --color-ink: #241c16;        /* warm espresso near-black (text + borders) */
+  --color-ink-soft: #7a6a59;   /* secondary text        */
+  --color-line: #ead9bd;       /* hairlines / dashed tears */
+
+  --color-tomato: #ff5a3c;     /* primary / surprise */
+  --color-tomato-ink: #b8331a; /* tomato text-on-light */
+  --color-mustard: #ffc23c;    /* browse */
+  --color-mustard-ink: #9a6b04;
+  --color-herb: #1f9d63;       /* group vote / positive */
+  --color-herb-ink: #126a43;
+  --color-grape: #6b2d5c;      /* deep accent */
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+:root { color-scheme: light; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* faint placemat dot-grid for warmth */
+.placemat {
+  background-image: radial-gradient(var(--color-line) 1.2px, transparent 1.3px);
+  background-size: 22px 22px;
+  background-position: -11px -11px;
+}
+
+/* ── Signature: the tactile "tile" (thick ink border + hard offset shadow) ─ */
+/* NB: named .tile (not .block) to avoid colliding with Tailwind's `block` utility */
+.tile {
+  border: 2.5px solid var(--color-ink);
+  border-radius: 20px;
+  box-shadow: 5px 5px 0 0 var(--color-ink);
+  transition: transform 0.09s ease, box-shadow 0.09s ease;
+}
+.tile-press:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 0 var(--color-ink);
+}
+.tile-sm { box-shadow: 4px 4px 0 0 var(--color-ink); border: 2px solid var(--color-ink); border-radius: 16px; }
+
+/* ── Signature: the receipt / TODAY'S PICK ticket ──────────────────────── */
+.ticket {
+  background: #fff;
+  border: 2.5px solid var(--color-ink);
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 0 var(--color-ink);
+}
+.tear {
+  border-top: 2.5px dashed var(--color-line);
+}
+.stamp {
+  font-family: var(--font-mono);
+  letter-spacing: 0.18em;
+  border: 2px solid currentColor;
+  border-radius: 7px;
+  transform: rotate(-3deg);
+}
+
+/* a chunky highlight swipe behind a word */
+.swipe {
+  background: linear-gradient(transparent 55%, var(--color-mustard) 55%);
+  padding-inline: 0.08em;
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────── */
+@keyframes reel {
+  0% { transform: translateY(8%); }
+  100% { transform: translateY(-8%); }
+}
+.reel-spin { animation: reel 0.18s linear infinite; }
+
+@keyframes pop {
+  0% { transform: scale(0.92) rotate(-1.5deg); opacity: 0; }
+  60% { transform: scale(1.03) rotate(0.8deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.pop-in { animation: pop 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.group:hover .wobble { animation: wobble 0.45s ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reel-spin, .pop-in, .wobble { animation: none !important; }
+  .tile, .tile-press { transition: none; }
 }

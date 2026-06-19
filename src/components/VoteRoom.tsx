@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { VoteSession, VoteOption, Vote } from "@/lib/vote/types";
 import { tallyVotes } from "@/lib/vote/winner";
 import { useSessionVotes } from "@/hooks/useSessionVotes";
@@ -30,43 +31,64 @@ export function VoteRoom({
   const winner = options.find((o) => o.id === live.winnerOptionId);
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-xl font-bold">{initialSession.hostName}&apos;s lunch vote</h1>
-      <p className="text-sm text-gray-500">Voting as {voterName}</p>
+    <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
+      <Link href="/" className="font-display text-base font-bold">
+        🍜 whatToEat
+      </Link>
+
+      <header>
+        <h1 className="font-display text-2xl font-extrabold leading-tight">
+          {initialSession.hostName}&apos;s lunch vote
+        </h1>
+        <p className="mt-1 font-mono text-xs text-ink-soft">Voting as {voterName}</p>
+      </header>
 
       {closed && (
-        <p className="rounded-xl bg-green-50 p-3 font-semibold text-green-700">
-          Winner: {winner ? winner.name : "No winner (all vetoed)"}
+        <p className="tile bg-herb/15 p-4 font-display text-lg font-bold text-herb-ink">
+          🏆 Winner: {winner ? winner.name : "No winner (all vetoed)"}
         </p>
       )}
 
-      {options.map((o) => (
-        <div key={o.id} className="flex items-center justify-between rounded-2xl border p-4">
-          <span className="font-medium">{o.name}</span>
-          <span className="flex items-center gap-3 text-sm">
-            <span data-testid={`up-${o.id}`}>👍 {tally[o.id]?.up ?? 0}</span>
-            <span data-testid={`veto-${o.id}`}>🚫 {tally[o.id]?.veto ?? 0}</span>
+      <div className="flex flex-col gap-3">
+        {options.map((o) => (
+          <div key={o.id} className="tile bg-white p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate font-display text-lg font-bold">{o.name}</span>
+              <span className="flex shrink-0 items-center gap-2 font-mono text-sm font-semibold">
+                <span data-testid={`up-${o.id}`}>👍 {tally[o.id]?.up ?? 0}</span>
+                <span data-testid={`veto-${o.id}`}>🚫 {tally[o.id]?.veto ?? 0}</span>
+              </span>
+            </div>
             {!closed && (
-              <>
-                <button onClick={() => onCast(o.id, "up")}
-                  className="rounded bg-green-600 px-2 py-1 text-white" aria-label={`Upvote ${o.name}`}>
-                  Up
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => onCast(o.id, "up")}
+                  aria-label={`Upvote ${o.name}`}
+                  className="tile-sm tile-press flex-1 bg-herb/15 py-2 text-sm font-bold text-herb-ink"
+                >
+                  👍 Up
                 </button>
-                <button onClick={() => onCast(o.id, "veto")}
-                  className="rounded bg-red-600 px-2 py-1 text-white" aria-label={`Veto ${o.name}`}>
-                  Veto
+                <button
+                  onClick={() => onCast(o.id, "veto")}
+                  aria-label={`Veto ${o.name}`}
+                  className="tile-sm tile-press flex-1 bg-tomato/15 py-2 text-sm font-bold text-tomato-ink"
+                >
+                  🚫 Veto
                 </button>
-              </>
+              </div>
             )}
-          </span>
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
 
       {!closed && canClose && (
-        <button onClick={onClose} className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white">
+        <button
+          onClick={onClose}
+          className="tile tile-press bg-tomato px-4 py-3 font-display text-lg font-bold text-ink"
+        >
           Close voting and pick winner
         </button>
       )}
-    </div>
+    </main>
   );
 }

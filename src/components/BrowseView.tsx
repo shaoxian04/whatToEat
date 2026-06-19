@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
 import { applyFilters, type FilterCriteria } from "@/lib/decision/filter";
@@ -39,17 +40,42 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords }: Props) 
     [pool, origin, criteria],
   );
 
-  if (status === "loading") return <p className="p-6">Finding places near you…</p>;
-  if (status === "error") return <p className="p-6">Something went wrong. Please try again.</p>;
+  if (status === "loading")
+    return (
+      <main className="placemat flex min-h-screen flex-col items-center justify-center gap-2 px-5 text-center">
+        <p className="text-5xl">🔍</p>
+        <p className="font-display text-xl font-bold">Finding places near you…</p>
+      </main>
+    );
+  if (status === "error")
+    return (
+      <main className="placemat flex min-h-screen flex-col items-center justify-center gap-2 px-5 text-center">
+        <p className="text-5xl">😕</p>
+        <p className="font-display text-xl font-bold">Something went wrong. Please try again.</p>
+      </main>
+    );
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 p-6">
+    <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
+      <div className="flex items-center justify-between">
+        <Link href="/" className="font-display text-lg font-bold">
+          🍜 whatToEat
+        </Link>
+        <span className="font-mono text-xs text-ink-soft">{filtered.length} spots</span>
+      </div>
+      <h1 className="font-display text-2xl font-extrabold leading-tight">Browse nearby</h1>
       <FilterControls value={criteria} onChange={setCriteria} />
       {filtered.length === 0 ? (
-        <p>No restaurants match these filters. Try relaxing them.</p>
+        <p className="tile bg-white p-4 text-center text-ink-soft">
+          No restaurants match these filters. Try relaxing them.
+        </p>
       ) : (
-        filtered.map((rst) => <RestaurantCard key={rst.placeId} restaurant={rst} />)
+        <div className="flex flex-col gap-3">
+          {filtered.map((rst) => (
+            <RestaurantCard key={rst.placeId} restaurant={rst} />
+          ))}
+        </div>
       )}
-    </div>
+    </main>
   );
 }

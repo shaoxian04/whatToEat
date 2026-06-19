@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
 import { pickRandom } from "@/lib/decision/pick";
@@ -7,8 +8,19 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 
 interface Props {
   loadRestaurants: (coords: LatLng) => Promise<Restaurant[]>;
-  autoStartCoords?: LatLng;          // test hook; in the page this comes from geolocation
-  rng?: () => number;                // test hook
+  autoStartCoords?: LatLng; // test hook; in the page this comes from geolocation
+  rng?: () => number; // test hook
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-6 px-5 py-8">
+      <Link href="/" className="font-display text-lg font-bold">
+        🍜 whatToEat
+      </Link>
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">{children}</div>
+    </main>
+  );
 }
 
 export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random }: Props) {
@@ -44,21 +56,57 @@ export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random
     [pool, current, rng],
   );
 
-  if (status === "loading") return <p className="p-6">Finding places near you…</p>;
-  if (status === "empty") return <p className="p-6">No restaurants found nearby. Try moving or widening your search.</p>;
-  if (status === "error") return <p className="p-6">Something went wrong loading restaurants. Please try again.</p>;
+  if (status === "loading")
+    return (
+      <Shell>
+        <p className="text-5xl">🎲</p>
+        <p className="font-display text-xl font-bold">Finding places near you…</p>
+      </Shell>
+    );
+  if (status === "empty")
+    return (
+      <Shell>
+        <p className="text-5xl">🍽️</p>
+        <p className="font-display text-xl font-bold">No restaurants found nearby.</p>
+        <p className="text-ink-soft">Try moving or widening your search.</p>
+      </Shell>
+    );
+  if (status === "error")
+    return (
+      <Shell>
+        <p className="text-5xl">😕</p>
+        <p className="font-display text-xl font-bold">Something went wrong loading restaurants.</p>
+        <p className="text-ink-soft">Please try again.</p>
+      </Shell>
+    );
   if (status === "ready" && current) {
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-4 p-6">
-        <RestaurantCard restaurant={current} />
-        <button
-          onClick={again}
-          className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white"
-        >
-          🎲 Pick again
-        </button>
-      </div>
+      <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-5 py-8">
+        <Link href="/" className="font-display text-lg font-bold">
+          🍜 whatToEat
+        </Link>
+        <div className="flex flex-1 flex-col justify-center gap-5">
+          <div className="flex justify-center">
+            <span className="stamp inline-block bg-paper px-3 py-1 font-mono text-xs font-bold text-tomato-ink">
+              TODAY&apos;S PICK
+            </span>
+          </div>
+          <div key={current.placeId} className="pop-in">
+            <RestaurantCard restaurant={current} />
+          </div>
+          <button
+            onClick={again}
+            className="tile tile-press bg-mustard px-4 py-3 text-center font-display text-lg font-bold text-ink"
+          >
+            🎲 Pick again
+          </button>
+        </div>
+      </main>
     );
   }
-  return <p className="p-6">Getting ready…</p>;
+  return (
+    <Shell>
+      <p className="font-display text-xl font-bold">Getting ready…</p>
+    </Shell>
+  );
 }

@@ -9,12 +9,12 @@ interface Props {
 
 export function FilterControls({ value, onChange }: Props) {
   return (
-    <div className="flex flex-wrap gap-3">
-      <label className="text-sm">
-        Minimum rating
+    <div className="flex flex-wrap gap-2">
+      <label className="tile-sm flex items-center gap-1.5 bg-white px-3 py-1.5 text-sm font-semibold">
+        <span className="text-ink-soft">Rating</span>
         <select
           aria-label="Minimum rating"
-          className="ml-2 rounded border px-2 py-1"
+          className="cursor-pointer bg-transparent font-bold text-ink outline-none"
           value={value.minRating ?? ""}
           onChange={(e) =>
             onChange({ ...value, minRating: e.target.value ? Number(e.target.value) : undefined })
@@ -27,11 +27,11 @@ export function FilterControls({ value, onChange }: Props) {
         </select>
       </label>
 
-      <label className="text-sm">
-        Max price
+      <label className="tile-sm flex items-center gap-1.5 bg-white px-3 py-1.5 text-sm font-semibold">
+        <span className="text-ink-soft">Price</span>
         <select
           aria-label="Maximum price"
-          className="ml-2 rounded border px-2 py-1"
+          className="cursor-pointer bg-transparent font-bold text-ink outline-none"
           value={value.maxPriceLevel ?? ""}
           onChange={(e) =>
             onChange({ ...value, maxPriceLevel: e.target.value ? Number(e.target.value) : undefined })
@@ -44,10 +44,11 @@ export function FilterControls({ value, onChange }: Props) {
         </select>
       </label>
 
-      <label className="flex items-center gap-1 text-sm">
+      <label className="tile-sm flex cursor-pointer items-center gap-1.5 bg-white px-3 py-1.5 text-sm font-semibold">
         <input
           type="checkbox"
           aria-label="Open now"
+          className="size-4 accent-herb"
           checked={value.openNow === true}
           onChange={(e) => onChange({ ...value, openNow: e.target.checked ? true : undefined })}
         />
