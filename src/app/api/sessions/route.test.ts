@@ -31,4 +31,24 @@ describe("POST /api/sessions", () => {
     const res = await POST(req({ hostName: "Sam", options: [{ name: "Sushi" }, { name: "  " }] }, "4.4.4.4"));
     expect(res.status).toBe(400);
   });
+  it("rejects a hostName longer than 80 characters", async () => {
+    const res = await POST(req({ hostName: "a".repeat(81), options: [{ name: "Sushi" }, { name: "Pizza" }] }, "5.5.5.5"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("hostName is too long.");
+  });
+  it("rejects more than 50 options", async () => {
+    const options = Array.from({ length: 51 }, (_, i) => ({ name: `o${i}` }));
+    const res = await POST(req({ hostName: "Sam", options }, "6.6.6.6"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("Too many options (max 50).");
+  });
+  it("rejects an option whose name exceeds 200 characters", async () => {
+    const options = [{ name: "a".repeat(201) }, { name: "Pizza" }];
+    const res = await POST(req({ hostName: "Sam", options }, "7.7.7.7"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("An option name is too long.");
+  });
 });
