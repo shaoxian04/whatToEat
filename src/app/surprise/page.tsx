@@ -2,18 +2,10 @@
 
 import { useEffect, useCallback } from "react";
 import { DecideView } from "@/components/DecideView";
+import { StatusScreen } from "@/components/StatusScreen";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { fetchNearbyRestaurants } from "@/lib/api/nearby-client";
 import type { LatLng } from "@/lib/decision/types";
-
-function StatusScreen({ emoji, text }: { emoji: string; text: string }) {
-  return (
-    <main className="placemat flex min-h-screen flex-col items-center justify-center gap-2 px-5 text-center">
-      <p className="text-5xl">{emoji}</p>
-      <p className="font-display text-xl font-bold">{text}</p>
-    </main>
-  );
-}
 
 export default function SurprisePage() {
   const { coords, error, request } = useGeolocation();

@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import type { VoteSession, VoteOption, Vote } from "@/lib/vote/types";
 import { tallyVotes } from "@/lib/vote/winner";
 import { useSessionVotes } from "@/hooks/useSessionVotes";
+import { BackHome } from "@/components/BackHome";
 
 interface Props {
   sessionId: string;
@@ -30,11 +31,28 @@ export function VoteRoom({
   const closed = live.status === "closed";
   const winner = options.find((o) => o.id === live.winnerOptionId);
 
+  const [shareUrl, setShareUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") setShareUrl(window.location.href);
+  }, []);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(t);
+  }, [copied]);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
     <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
-      <Link href="/" className="font-display text-base font-bold">
-        🍜 whatToEat
-      </Link>
+      <BackHome />
 
       <header>
         <h1 className="font-display text-2xl font-extrabold leading-tight">
@@ -42,6 +60,29 @@ export function VoteRoom({
         </h1>
         <p className="mt-1 font-mono text-xs text-ink-soft">Voting as {voterName}</p>
       </header>
+
+      {!closed && shareUrl && (
+        <div className="tile flex flex-col gap-2 bg-mustard/15 p-3">
+          <p className="font-mono text-xs font-bold uppercase tracking-widest text-mustard-ink">
+            Invite the crew →
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="Shareable vote link"
+              className="tile-sm min-w-0 flex-1 truncate bg-white px-2 py-1.5 font-mono text-xs outline-none"
+            />
+            <button
+              onClick={copyLink}
+              className="tile-sm tile-press shrink-0 bg-mustard px-3 py-1.5 text-sm font-bold text-ink"
+            >
+              {copied ? "✓ Copied" : "Copy link"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {closed && (
         <p className="tile bg-herb/15 p-4 font-display text-lg font-bold text-herb-ink">

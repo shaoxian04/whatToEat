@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { BackHome } from "@/components/BackHome";
 
 interface Props {
   onCreate: (hostName: string, options: string[]) => Promise<void>;
@@ -31,9 +31,7 @@ export function QuickVoteForm({ onCreate }: Props) {
 
   return (
     <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
-      <Link href="/" className="font-display text-lg font-bold">
-        🍜 whatToEat
-      </Link>
+      <BackHome />
       <header>
         <h1 className="font-display text-3xl font-extrabold leading-tight">Quick group vote</h1>
         <p className="mt-1 text-sm text-ink-soft">Throw out the options — settle it together.</p>

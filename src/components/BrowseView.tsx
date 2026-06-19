@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
 import { applyFilters, type FilterCriteria } from "@/lib/decision/filter";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { FilterControls } from "@/components/FilterControls";
+import { BackHome } from "@/components/BackHome";
 
 interface Props {
   loadRestaurants: (coords: LatLng) => Promise<Restaurant[]>;
@@ -58,9 +58,7 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords }: Props) 
   return (
     <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
       <div className="flex items-center justify-between">
-        <Link href="/" className="font-display text-lg font-bold">
-          🍜 whatToEat
-        </Link>
+        <BackHome />
         <span className="font-mono text-xs text-ink-soft">{filtered.length} spots</span>
       </div>
       <h1 className="font-display text-2xl font-extrabold leading-tight">Browse nearby</h1>

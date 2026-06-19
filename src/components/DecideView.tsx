@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
 import { pickRandom } from "@/lib/decision/pick";
 import { RestaurantCard } from "@/components/RestaurantCard";
+import { BackHome } from "@/components/BackHome";
 
 interface Props {
   loadRestaurants: (coords: LatLng) => Promise<Restaurant[]>;
@@ -15,9 +15,7 @@ interface Props {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-6 px-5 py-8">
-      <Link href="/" className="font-display text-lg font-bold">
-        🍜 whatToEat
-      </Link>
+      <BackHome />
       <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">{children}</div>
     </main>
   );
@@ -82,9 +80,7 @@ export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random
   if (status === "ready" && current) {
     return (
       <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-5 py-8">
-        <Link href="/" className="font-display text-lg font-bold">
-          🍜 whatToEat
-        </Link>
+        <BackHome />
         <div className="flex flex-1 flex-col justify-center gap-5">
           <div className="flex justify-center">
             <span className="stamp inline-block bg-paper px-3 py-1 font-mono text-xs font-bold text-tomato-ink">
