@@ -26,9 +26,13 @@ export async function POST(
   }
 
   const { id } = await ctx.params;
+  const hostToken = req.headers.get("x-host-token") ?? "";
   try {
-    const result = await getRepository().closeSession(id);
+    const result = await getRepository().closeSession(id, hostToken);
     if ("error" in result) {
+      if (result.error === "forbidden") {
+        return NextResponse.json({ error: result.error }, { status: 403 });
+      }
       const status = result.error === "not_found" ? 404 : 409;
       return NextResponse.json({ error: result.error }, { status });
     }

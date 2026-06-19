@@ -13,11 +13,12 @@ function req(body: unknown, ip = "1.2.3.4"): Request {
 beforeEach(() => { __setRepositoryForTests(createInMemoryVoteRepository()); });
 
 describe("POST /api/sessions", () => {
-  it("creates a session and returns 201 with a sessionId", async () => {
+  it("creates a session and returns 201 with a sessionId and hostToken", async () => {
     const res = await POST(req({ hostName: "Sam", options: [{ name: "Sushi" }, { name: "Pizza" }] }));
     expect(res.status).toBe(201);
     const json = await res.json();
     expect(typeof json.sessionId).toBe("string");
+    expect(typeof json.hostToken).toBe("string");
   });
   it("rejects an empty host name", async () => {
     const res = await POST(req({ hostName: "", options: [{ name: "Sushi" }] }, "2.2.2.2"));

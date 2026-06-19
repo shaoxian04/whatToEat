@@ -20,13 +20,13 @@ export type CastVoteResult =
   | { ok: false; reason: "duplicate" | "closed" | "not_found" | "bad_option" };
 export type CloseResult =
   | { winnerId: string | null }
-  | { error: "not_found" | "already_closed" };
+  | { error: "not_found" | "already_closed" | "forbidden" };
 
 export interface VoteRepository {
-  createSession(input: CreateSessionInput): Promise<{ sessionId: string }>;
+  createSession(input: CreateSessionInput): Promise<{ sessionId: string; hostToken: string }>;
   getSession(sessionId: string): Promise<SessionState | null>;
   castVote(sessionId: string, input: CastVoteInput): Promise<CastVoteResult>;
-  closeSession(sessionId: string): Promise<CloseResult>;
+  closeSession(sessionId: string, hostToken: string): Promise<CloseResult>;
 }
 
 // Deterministic id generator for the in-memory double (tests only — never used in prod).
@@ -40,10 +40,12 @@ export function createInMemoryVoteRepository(): VoteRepository {
   const sessions = new Map<string, VoteSession>();
   const options = new Map<string, VoteOption[]>();
   const votes = new Map<string, Vote[]>();
+  const hostTokens = new Map<string, string>();
 
   return {
     async createSession(input) {
       const sessionId = nextId();
+      const hostToken = `host-${nextId()}`;
       sessions.set(sessionId, {
         id: sessionId, hostName: input.hostName, status: "open",
         winnerOptionId: null, expiresAt: "",
@@ -52,7 +54,8 @@ export function createInMemoryVoteRepository(): VoteRepository {
         id: nextId(), sessionId, placeId: o.placeId ?? null, name: o.name, snapshot: o.snapshot ?? null,
       })));
       votes.set(sessionId, []);
-      return { sessionId };
+      hostTokens.set(sessionId, hostToken);
+      return { sessionId, hostToken };
     },
     async getSession(sessionId) {
       const session = sessions.get(sessionId);
@@ -76,9 +79,10 @@ export function createInMemoryVoteRepository(): VoteRepository {
       votes.set(sessionId, existing);
       return { ok: true };
     },
-    async closeSession(sessionId) {
+    async closeSession(sessionId, hostToken) {
       const session = sessions.get(sessionId);
       if (!session) return { error: "not_found" };
+      if (hostTokens.get(sessionId) !== hostToken) return { error: "forbidden" };
       if (session.status === "closed") return { error: "already_closed" };
       const winnerId = computeWinner(options.get(sessionId) ?? [], votes.get(sessionId) ?? []);
       sessions.set(sessionId, { ...session, status: "closed", winnerOptionId: winnerId });

@@ -9,6 +9,13 @@ create table if not exists sessions (
   user_id uuid -- nullable: accounts-ready hook, unused in this plan
 );
 
+create table if not exists session_secrets (
+  session_id uuid primary key references sessions(id) on delete cascade,
+  host_token uuid not null default gen_random_uuid()
+);
+alter table session_secrets enable row level security;
+-- NO anon policies: only the service-role (bypasses RLS) may read/write host tokens.
+
 create table if not exists session_options (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references sessions(id) on delete cascade,

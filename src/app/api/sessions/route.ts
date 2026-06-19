@@ -59,8 +59,8 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   try {
-    const { sessionId } = await getRepository().createSession({ hostName, options });
-    return NextResponse.json({ sessionId }, { status: 201 });
+    const { sessionId, hostToken } = await getRepository().createSession({ hostName, options });
+    return NextResponse.json({ sessionId, hostToken }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Could not create the vote. Please try again." }, { status: 500 });
   }

@@ -37,7 +37,13 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
       }));
       const { error: optErr } = await client.from("session_options").insert(rows);
       if (optErr) throw new Error("create options failed");
-      return { sessionId: session.id as string };
+      const { data: secret, error: secretErr } = await client
+        .from("session_secrets")
+        .insert({ session_id: session.id })
+        .select("host_token")
+        .single();
+      if (secretErr || !secret) throw new Error("create session secret failed");
+      return { sessionId: session.id as string, hostToken: (secret as Record<string, unknown>).host_token as string };
     },
     async getSession(sessionId: string): Promise<SessionState | null> {
       const { data: s } = await client.from("sessions").select().eq("id", sessionId).maybeSingle();
@@ -67,10 +73,20 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
       }
       return { ok: true };
     },
-    async closeSession(sessionId: string): Promise<CloseResult> {
+    async closeSession(sessionId: string, hostToken: string): Promise<CloseResult> {
+      const { data: s } = await client.from("sessions").select("status").eq("id", sessionId).maybeSingle();
+      if (!s) return { error: "not_found" };
+      const { data: secret } = await client
+        .from("session_secrets")
+        .select("host_token")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+      if (!secret || (secret as Record<string, unknown>).host_token !== hostToken) {
+        return { error: "forbidden" };
+      }
+      if (s.status === "closed") return { error: "already_closed" };
       const state = await this.getSession(sessionId);
       if (!state) return { error: "not_found" };
-      if (state.session.status === "closed") return { error: "already_closed" };
       const winnerId = computeWinner(state.options, state.votes);
       const { error } = await client.from("sessions")
         .update({ status: "closed", winner_option_id: winnerId }).eq("id", sessionId);
