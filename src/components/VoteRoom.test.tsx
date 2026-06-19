@@ -38,6 +38,12 @@ describe("VoteRoom", () => {
     expect(screen.queryByRole("button", { name: /upvote sushi/i })).not.toBeInTheDocument();
   });
 
+  it("renders the close button when open and canClose is true", () => {
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
+    expect(screen.getByRole("button", { name: /close voting/i })).toBeInTheDocument();
+  });
+
   it("does not render the close button when canClose is false", () => {
     render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
       voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={false} />);

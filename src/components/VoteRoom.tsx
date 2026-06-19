@@ -64,7 +64,7 @@ export function VoteRoom({
 
       {!closed && canClose && (
         <button onClick={onClose} className="rounded-xl bg-gray-900 px-4 py-2 font-medium text-white">
-          Close voting &amp; pick winner
+          Close voting and pick winner
         </button>
       )}
     </div>
