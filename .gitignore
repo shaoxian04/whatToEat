@@ -29,3 +29,9 @@ yarn-debug.log*
 yarn-error.log*
 .vscode/
 .idea/
+
+# typescript build info
+*.tsbuildinfo
+
+# next.js auto-generated (regenerated on every build)
+/next-env.d.ts
