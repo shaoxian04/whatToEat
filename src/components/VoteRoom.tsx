@@ -5,6 +5,8 @@ import type { VoteSession, VoteOption, Vote } from "@/lib/vote/types";
 import { tallyVotes } from "@/lib/vote/winner";
 import { useSessionVotes } from "@/hooks/useSessionVotes";
 import { BackHome } from "@/components/BackHome";
+import { parseSnapshot } from "@/lib/vote/snapshot";
+import { priceLabel, mapsUrl } from "@/lib/restaurant-format";
 
 interface Props {
   sessionId: string;
@@ -100,6 +102,37 @@ export function VoteRoom({
                 <span data-testid={`veto-${o.id}`}>🚫 {tally[o.id]?.veto ?? 0}</span>
               </span>
             </div>
+            {(() => {
+              const snap = parseSnapshot(o.snapshot);
+              if (!snap) return null;
+              return (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-xs font-medium">
+                  {snap.rating !== null && (
+                    <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">
+                      {`★ ${snap.rating}`}
+                    </span>
+                  )}
+                  {snap.priceLevel !== null && (
+                    <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">
+                      {priceLabel(snap.priceLevel)}
+                    </span>
+                  )}
+                  {snap.openNow === true && (
+                    <span className="rounded-full border-[1.5px] border-ink bg-herb/20 px-2 py-0.5 text-herb-ink">
+                      Open now
+                    </span>
+                  )}
+                  <a
+                    href={mapsUrl(snap.name, snap.placeId)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-tomato-ink underline"
+                  >
+                    Directions →
+                  </a>
+                </div>
+              );
+            })()}
             {!closed && (
               <div className="mt-3 flex gap-2">
                 <button

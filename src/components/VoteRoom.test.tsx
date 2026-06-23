@@ -49,4 +49,24 @@ describe("VoteRoom", () => {
       voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={false} />);
     expect(screen.queryByRole("button", { name: /close voting/i })).toBeNull();
   });
+
+  it("renders restaurant details for options that carry a snapshot", () => {
+    const richOptions: VoteOption[] = [
+      { id: "o1", sessionId: "s1", placeId: "a", name: "Sushi",
+        snapshot: { placeId: "a", name: "Sushi", rating: 4.6, priceLevel: 2, lat: 0, lng: 0, openNow: true, photoRef: null } },
+      { id: "o2", sessionId: "s1", placeId: null, name: "Pizza", snapshot: null },
+    ];
+    render(<VoteRoom sessionId="s1" initialSession={session} options={richOptions} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
+    expect(screen.getByText("★ 4.6")).toBeInTheDocument();
+    // Directions link only appears for the option that has a snapshot.
+    expect(screen.getAllByRole("link", { name: /directions/i })).toHaveLength(1);
+  });
+
+  it("falls back to name-only for options without a snapshot", () => {
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
+    expect(screen.queryByRole("link", { name: /directions/i })).toBeNull();
+    expect(screen.getByText("Sushi")).toBeInTheDocument();
+  });
 });
