@@ -36,6 +36,7 @@ test("browse → select restaurants → start a team vote with rich option cards
   await page.getByRole("button", { name: /add alpha diner to vote/i }).click();
   await page.getByRole("button", { name: /add beta bistro to vote/i }).click();
   await page.getByRole("button", { name: /vote with team/i }).click();
+  await page.waitForURL(/\/vote\b/);
 
   // Pre-filled vote form shows the picks; host names themselves.
   await expect(page.getByText("Alpha Diner")).toBeVisible();
@@ -45,5 +46,7 @@ test("browse → select restaurants → start a team vote with rich option cards
   // Room renders rich cards from the snapshot.
   await expect(page.getByText("★ 4.6")).toBeVisible();
   await expect(page.getByRole("link", { name: /directions/i }).first()).toBeVisible();
+  // Both selected restaurants render their own rich card → two Directions links.
+  await expect(page.getByRole("link", { name: /directions/i })).toHaveCount(2);
   await expect(page.getByRole("button", { name: /copy link/i })).toBeVisible();
 });
