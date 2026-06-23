@@ -11,7 +11,6 @@ export interface Vote {
   sessionId: string;
   optionId: string;
   voterName: string;
-  type: "up" | "veto";
   createdAt: string;
 }
 
@@ -24,5 +23,5 @@ export interface VoteSession {
 }
 
 export interface Tally {
-  [optionId: string]: { up: number; veto: number };
+  [optionId: string]: { up: number };
 }

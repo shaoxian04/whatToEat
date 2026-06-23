@@ -14,7 +14,7 @@ const stubSubscribe = (_id: string, initial: { votes: Vote[]; status: "open" | "
 
 describe("VoteRoom", () => {
   it("renders options with their up tallies", () => {
-    const votes: Vote[] = [{ id: "v1", sessionId: "s1", optionId: "o1", voterName: "Al", type: "up", createdAt: "" }];
+    const votes: Vote[] = [{ id: "v1", sessionId: "s1", optionId: "o1", voterName: "Al", createdAt: "" }];
     render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={votes}
       voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
     expect(screen.getByText("Sushi")).toBeInTheDocument();
@@ -27,7 +27,14 @@ describe("VoteRoom", () => {
     render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
       voterName="Bo" onCast={onCast} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
     await userEvent.click(screen.getByRole("button", { name: /upvote sushi/i }));
-    expect(onCast).toHaveBeenCalledWith("o1", "up");
+    expect(onCast).toHaveBeenCalledWith("o1");
+  });
+
+  it("no longer renders a veto button", () => {
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
+    expect(screen.queryByRole("button", { name: /veto/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /upvote sushi/i })).toBeInTheDocument();
   });
 
   it("shows the winner and hides vote buttons when closed", () => {

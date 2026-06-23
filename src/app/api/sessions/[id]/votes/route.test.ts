@@ -18,25 +18,25 @@ function body(b: unknown) {
 }
 
 describe("POST /api/sessions/[id]/votes", () => {
-  it("records a valid vote (200)", async () => {
-    const res = await POST(body({ voterName: "Al", optionId, type: "up" }), ctx(sessionId));
+  it("records a valid upvote (200)", async () => {
+    const res = await POST(body({ voterName: "Al", optionId }), ctx(sessionId));
     expect(res.status).toBe(200);
   });
   it("rejects a duplicate vote with 409", async () => {
-    await POST(body({ voterName: "Al", optionId, type: "up" }), ctx(sessionId));
-    const res = await POST(body({ voterName: "Al", optionId, type: "up" }), ctx(sessionId));
+    await POST(body({ voterName: "Al", optionId }), ctx(sessionId));
+    const res = await POST(body({ voterName: "Al", optionId }), ctx(sessionId));
     expect(res.status).toBe(409);
   });
-  it("rejects an invalid type with 400", async () => {
-    const res = await POST(body({ voterName: "Al", optionId, type: "maybe" }), ctx(sessionId));
+  it("rejects a missing optionId with 400", async () => {
+    const res = await POST(body({ voterName: "Al" }), ctx(sessionId));
     expect(res.status).toBe(400);
   });
   it("404s for an unknown session", async () => {
-    const res = await POST(body({ voterName: "Al", optionId, type: "up" }), ctx("nope"));
+    const res = await POST(body({ voterName: "Al", optionId }), ctx("nope"));
     expect(res.status).toBe(404);
   });
   it("rejects a voterName longer than 80 characters with 400", async () => {
-    const res = await POST(body({ voterName: "a".repeat(81), optionId, type: "up" }), ctx(sessionId));
+    const res = await POST(body({ voterName: "a".repeat(81), optionId }), ctx(sessionId));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toBe("voterName is too long.");

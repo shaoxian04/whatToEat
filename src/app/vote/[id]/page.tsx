@@ -46,11 +46,11 @@ export default function VoteRoomPage() {
   );
 
   const onCast = useCallback(
-    async (optionId: string, type: "up" | "veto") => {
+    async (optionId: string) => {
       await fetch(`/api/sessions/${sessionId}/votes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voterName, optionId, type }),
+        body: JSON.stringify({ voterName, optionId }),
       });
     },
     [sessionId, voterName],

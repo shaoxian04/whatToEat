@@ -14,7 +14,7 @@ interface Props {
   options: VoteOption[];
   initialVotes: Vote[];
   voterName: string;
-  onCast: (optionId: string, type: "up" | "veto") => Promise<void>;
+  onCast: (optionId: string) => Promise<void>;
   onClose: () => Promise<void>;
   canClose: boolean;
   subscribe?: typeof useSessionVotes;
@@ -88,7 +88,7 @@ export function VoteRoom({
 
       {closed && (
         <p className="tile bg-herb/15 p-4 font-display text-lg font-bold text-herb-ink">
-          🏆 Winner: {winner ? winner.name : "No winner (all vetoed)"}
+          🏆 Winner: {winner ? winner.name : "No winner yet"}
         </p>
       )}
 
@@ -99,7 +99,6 @@ export function VoteRoom({
               <span className="min-w-0 truncate font-display text-lg font-bold">{o.name}</span>
               <span className="flex shrink-0 items-center gap-2 font-mono text-sm font-semibold">
                 <span data-testid={`up-${o.id}`}>👍 {tally[o.id]?.up ?? 0}</span>
-                <span data-testid={`veto-${o.id}`}>🚫 {tally[o.id]?.veto ?? 0}</span>
               </span>
             </div>
             {(() => {
@@ -134,22 +133,13 @@ export function VoteRoom({
               );
             })()}
             {!closed && (
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => onCast(o.id, "up")}
-                  aria-label={`Upvote ${o.name}`}
-                  className="tile-sm tile-press flex-1 bg-herb/15 py-2 text-sm font-bold text-herb-ink"
-                >
-                  👍 Up
-                </button>
-                <button
-                  onClick={() => onCast(o.id, "veto")}
-                  aria-label={`Veto ${o.name}`}
-                  className="tile-sm tile-press flex-1 bg-tomato/15 py-2 text-sm font-bold text-tomato-ink"
-                >
-                  🚫 Veto
-                </button>
-              </div>
+              <button
+                onClick={() => onCast(o.id)}
+                aria-label={`Upvote ${o.name}`}
+                className="tile-sm tile-press mt-3 w-full bg-herb/15 py-2 text-sm font-bold text-herb-ink"
+              >
+                👍 Up
+              </button>
             )}
           </div>
         ))}

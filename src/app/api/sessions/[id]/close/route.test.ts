@@ -22,7 +22,7 @@ function post(token?: string) {
 describe("POST /api/sessions/[id]/close", () => {
   it("closes the session and returns a winnerId field (200) with correct token", async () => {
     const optionId = (await repo.getSession(sessionId))!.options[0].id;
-    await repo.castVote(sessionId, { voterName: "Al", optionId, type: "up" });
+    await repo.castVote(sessionId, { voterName: "Al", optionId });
     const res = await POST(post(hostToken), ctx(sessionId));
     expect(res.status).toBe(200);
     const json = await res.json();
