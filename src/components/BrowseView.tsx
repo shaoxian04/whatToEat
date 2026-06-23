@@ -7,16 +7,20 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 import { FilterControls } from "@/components/FilterControls";
 import { BackHome } from "@/components/BackHome";
 
+const MAX_SELECTED = 50;
+
 interface Props {
   loadRestaurants: (coords: LatLng) => Promise<Restaurant[]>;
   origin: LatLng;
   autoStartCoords?: LatLng;
+  onVoteWithTeam?: (picks: Restaurant[]) => void;
 }
 
-export function BrowseView({ loadRestaurants, origin, autoStartCoords }: Props) {
+export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWithTeam }: Props) {
   const [pool, setPool] = useState<Restaurant[]>([]);
   const [criteria, setCriteria] = useState<FilterCriteria>({});
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const start = useCallback(
     async (coords: LatLng) => {
@@ -40,6 +44,20 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords }: Props) 
     [pool, origin, criteria],
   );
 
+  const toggle = useCallback((placeId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(placeId)) next.delete(placeId);
+      else if (next.size < MAX_SELECTED) next.add(placeId);
+      return next;
+    });
+  }, []);
+
+  const startVote = useCallback(() => {
+    if (!onVoteWithTeam) return;
+    onVoteWithTeam(pool.filter((rst) => selectedIds.has(rst.placeId)));
+  }, [onVoteWithTeam, pool, selectedIds]);
+
   if (status === "loading")
     return (
       <main className="placemat flex min-h-screen flex-col items-center justify-center gap-2 px-5 text-center">
@@ -54,6 +72,9 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords }: Props) 
         <p className="font-display text-xl font-bold">Something went wrong. Please try again.</p>
       </main>
     );
+
+  const selectable = !!onVoteWithTeam;
+  const count = selectedIds.size;
 
   return (
     <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
@@ -70,8 +91,27 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords }: Props) 
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((rst) => (
-            <RestaurantCard key={rst.placeId} restaurant={rst} />
+            <RestaurantCard
+              key={rst.placeId}
+              restaurant={rst}
+              selectable={selectable}
+              selected={selectedIds.has(rst.placeId)}
+              onToggle={() => toggle(rst.placeId)}
+            />
           ))}
+        </div>
+      )}
+
+      {selectable && count > 0 && (
+        <div className="sticky bottom-4 mt-2">
+          <button
+            type="button"
+            onClick={startVote}
+            disabled={count < 2}
+            className="tile tile-press w-full bg-herb px-4 py-3 text-center font-display text-lg font-bold text-ink disabled:opacity-60"
+          >
+            {count < 2 ? "Pick 2+ to vote" : `🗳️ Vote with team (${count})`}
+          </button>
         </div>
       )}
     </main>
