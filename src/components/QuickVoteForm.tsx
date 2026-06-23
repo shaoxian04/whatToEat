@@ -3,30 +3,41 @@
 import { useState } from "react";
 import { BackHome } from "@/components/BackHome";
 
-interface Props {
-  onCreate: (hostName: string, options: string[]) => Promise<void>;
+export interface VoteOptionInput {
+  name: string;
+  placeId?: string | null;
+  snapshot?: unknown;
 }
 
-export function QuickVoteForm({ onCreate }: Props) {
+interface Props {
+  onCreate: (hostName: string, options: VoteOptionInput[]) => Promise<void>;
+  initialOptions?: VoteOptionInput[];
+}
+
+export function QuickVoteForm({ onCreate, initialOptions }: Props) {
   const [hostName, setHostName] = useState("");
-  const [options, setOptions] = useState<string[]>(["", ""]);
+  const [picks, setPicks] = useState<VoteOptionInput[]>(initialOptions ?? []);
+  const [texts, setTexts] = useState<string[]>((initialOptions?.length ?? 0) >= 2 ? [] : ["", ""]);
   const [error, setError] = useState<string | null>(null);
 
-  const setOption = (i: number, val: string) =>
-    setOptions((prev) => prev.map((o, idx) => (idx === i ? val : o)));
+  const setText = (i: number, val: string) =>
+    setTexts((prev) => prev.map((o, idx) => (idx === i ? val : o)));
+  const removePick = (i: number) =>
+    setPicks((prev) => prev.filter((_, idx) => idx !== i));
 
   const submit = async () => {
-    const filled = options.map((o) => o.trim()).filter(Boolean);
+    const filledTexts: VoteOptionInput[] = texts.map((o) => o.trim()).filter(Boolean).map((name) => ({ name }));
+    const all = [...picks, ...filledTexts];
     if (!hostName.trim()) {
       setError("Please enter your name.");
       return;
     }
-    if (filled.length < 2) {
+    if (all.length < 2) {
       setError("Add at least 2 options.");
       return;
     }
     setError(null);
-    await onCreate(hostName.trim(), filled);
+    await onCreate(hostName.trim(), all);
   };
 
   return (
@@ -47,21 +58,39 @@ export function QuickVoteForm({ onCreate }: Props) {
         />
       </label>
 
-      {options.map((o, i) => (
+      {picks.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {picks.map((p, i) => (
+            <div key={`${p.placeId ?? "pick"}-${i}`} className="tile-sm flex items-center justify-between gap-2 bg-paper-2 px-3 py-2">
+              <span className="min-w-0 truncate font-display font-bold">{p.name}</span>
+              <button
+                type="button"
+                onClick={() => removePick(i)}
+                aria-label={`Remove ${p.name}`}
+                className="shrink-0 font-mono text-sm font-bold text-tomato-ink"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {texts.map((o, i) => (
         <label key={i} className="flex flex-col gap-1 text-sm font-semibold">
           {`Option ${i + 1}`}
           <input
             className="tile-sm bg-white px-3 py-2 font-medium outline-none"
             placeholder={i === 0 ? "Sushi place" : i === 1 ? "That noodle spot" : "Another option"}
             value={o}
-            onChange={(e) => setOption(i, e.target.value)}
+            onChange={(e) => setText(i, e.target.value)}
           />
         </label>
       ))}
 
       <button
         type="button"
-        onClick={() => setOptions((p) => [...p, ""])}
+        onClick={() => setTexts((p) => [...p, ""])}
         className="self-start font-mono text-sm font-bold text-tomato-ink"
       >
         + Add option
