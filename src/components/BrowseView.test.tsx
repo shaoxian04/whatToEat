@@ -29,4 +29,37 @@ describe("BrowseView", () => {
     expect(screen.getByText("Alpha")).toBeInTheDocument();
     expect(screen.queryByText("Beta")).not.toBeInTheDocument();
   });
+
+  it("starts a vote with the selected restaurants", async () => {
+    const loader = vi.fn().mockResolvedValue([
+      r({ placeId: "a", name: "Alpha" }), r({ placeId: "b", name: "Beta" }),
+    ]);
+    const onVoteWithTeam = vi.fn();
+    render(<BrowseView loadRestaurants={loader} origin={origin} autoStartCoords={origin} onVoteWithTeam={onVoteWithTeam} />);
+    await screen.findByText("Alpha");
+    await userEvent.click(screen.getByRole("button", { name: /add alpha to vote/i }));
+    await userEvent.click(screen.getByRole("button", { name: /add beta to vote/i }));
+    await userEvent.click(screen.getByRole("button", { name: /vote with team/i }));
+    expect(onVoteWithTeam).toHaveBeenCalledWith([
+      expect.objectContaining({ placeId: "a" }),
+      expect.objectContaining({ placeId: "b" }),
+    ]);
+  });
+
+  it("disables the vote bar until two are selected", async () => {
+    const loader = vi.fn().mockResolvedValue([
+      r({ placeId: "a", name: "Alpha" }), r({ placeId: "b", name: "Beta" }),
+    ]);
+    render(<BrowseView loadRestaurants={loader} origin={origin} autoStartCoords={origin} onVoteWithTeam={vi.fn()} />);
+    await screen.findByText("Alpha");
+    await userEvent.click(screen.getByRole("button", { name: /add alpha to vote/i }));
+    expect(screen.getByRole("button", { name: /pick 2\+ to vote/i })).toBeDisabled();
+  });
+
+  it("shows no select buttons when onVoteWithTeam is absent", async () => {
+    const loader = vi.fn().mockResolvedValue([r({ placeId: "a", name: "Alpha" })]);
+    render(<BrowseView loadRestaurants={loader} origin={origin} autoStartCoords={origin} />);
+    await screen.findByText("Alpha");
+    expect(screen.queryByRole("button", { name: /to vote/i })).toBeNull();
+  });
 });

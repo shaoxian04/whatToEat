@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import type { Restaurant } from "@/lib/decision/types";
 
@@ -29,5 +30,26 @@ describe("RestaurantCard", () => {
   it("hides rating/price gracefully when null", () => {
     render(<RestaurantCard restaurant={{ ...base, rating: null, priceLevel: null }} />);
     expect(screen.getByText(/no rating/i)).toBeInTheDocument();
+  });
+
+  it("renders no select button by default", () => {
+    render(<RestaurantCard restaurant={base} />);
+    expect(screen.queryByRole("button", { name: /to vote/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /directions/i })).toBeInTheDocument();
+  });
+
+  it("toggles selection when selectable", async () => {
+    const onToggle = vi.fn();
+    render(<RestaurantCard restaurant={base} selectable selected={false} onToggle={onToggle} />);
+    const btn = screen.getByRole("button", { name: /add sushi spot to vote/i });
+    expect(btn).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(btn);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the added state when selected", () => {
+    render(<RestaurantCard restaurant={base} selectable selected onToggle={vi.fn()} />);
+    const btn = screen.getByRole("button", { name: /remove sushi spot from vote/i });
+    expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 });
