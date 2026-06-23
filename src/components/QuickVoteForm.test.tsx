@@ -32,6 +32,10 @@ describe("QuickVoteForm", () => {
       { name: "Beta", placeId: "b", snapshot: { placeId: "b", name: "Beta" } },
     ];
     render(<QuickVoteForm onCreate={onCreate} initialOptions={initialOptions} />);
+    // Pre-filled picks must render as chips with remove controls.
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Beta")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /remove alpha/i })).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText(/your name/i), "Sam");
     await userEvent.click(screen.getByRole("button", { name: /start vote/i }));
     expect(onCreate).toHaveBeenCalledWith("Sam", initialOptions);
