@@ -1,0 +1,680 @@
+# Instincts generated from https://github.com/shaoxian04/whatToEat
+# Generated: 2026-06-19T07:17:50.701Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: whatToEat-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, test, refactor, chore, docs
+
+## Evidence
+
+- 15 commits analyzed
+- Detected conventional commit pattern
+- Examples: chore: scaffold Next.js app with Vitest + Playwright harness, feat: add restaurant types and random pick engine
+
+---
+id: whatToEat-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Commit Length
+
+## Action
+
+Keep commit messages concise (~47 characters)
+
+## Evidence
+
+- Average commit message length: 47 chars
+- Based on 15 commits
+
+---
+id: whatToEat-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: whatToEat-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: whatToEat-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: whatToEat-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: app, components, hooks, lib
+
+---
+id: whatToEat-test-colocate
+trigger: "when writing tests"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Test Colocate
+
+## Action
+
+Place test file next to the source file (e.g., Button.test.tsx next to Button.tsx)
+
+## Evidence
+
+- Colocated test pattern detected
+- Tests live alongside source files
+
+---
+id: whatToEat-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Test Framework
+
+## Action
+
+Use vitest as the test framework
+
+## Evidence
+
+- Test framework detected: vitest
+- File pattern: *.test.ts
+
+---
+id: whatToEat-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: whatToEat-test-mocking
+trigger: "when mocking dependencies in tests"
+confidence: 0.75
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Test Mocking
+
+## Action
+
+Use vi.mock for mocking
+
+## Evidence
+
+- Mocking pattern detected: vi.mock
+- Consistent across test files
+
+---
+id: whatToEat-test-types
+trigger: "when planning tests for a feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Test Types
+
+## Action
+
+Write unit, integration, e2e tests to match project standards
+
+## Evidence
+
+- Test types detected: unit, integration, e2e
+- Coverage config: no
+
+---
+id: whatToEat-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~22x per month
+- Files: src/lib/decision/*, src/lib/places/*, src/app/api/nearby/*
+
+---
+id: whatToEat-workflow-feature-implementation-with-unit-tests
+trigger: "when doing feature implementation with unit tests"
+confidence: 0.7
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Workflow Feature Implementation With Unit Tests
+
+## Action
+
+Follow the feature-implementation-with-unit-tests workflow:
+1. Create or update implementation file(s) for the new feature/module/component.
+2. Create or update corresponding unit test file(s) alongside the implementation.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~4x per month
+- Files: src/lib/decision/*.ts, src/lib/decision/*.test.ts, src/lib/places/*.ts
+
+---
+id: whatToEat-workflow-api-endpoint-creation-with-tests
+trigger: "when doing api endpoint creation with tests"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Workflow Api Endpoint Creation With Tests
+
+## Action
+
+Follow the api-endpoint-creation-with-tests workflow:
+1. Create new API route implementation file under api/.
+2. Create corresponding test file for the API route.
+3. If needed, create or update supporting utility files and their tests.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/app/api/*/route.ts, src/app/api/*/route.test.ts, src/lib/*.ts
+
+---
+id: whatToEat-workflow-ui-page-or-mode-creation-with-associated-components
+trigger: "when doing ui page or mode creation with associated components"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Workflow Ui Page Or Mode Creation With Associated Components
+
+## Action
+
+Follow the ui-page-or-mode-creation-with-associated-components workflow:
+1. Create or update page file under src/app/[mode]/page.tsx.
+2. Create or update associated component(s) in src/components/.
+3. Add or update corresponding test files for pages and components.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: src/app/*/page.tsx, src/app/*/page.test.tsx, src/components/*.tsx
+
+---
+id: whatToEat-workflow-refactor-with-targeted-file-updates
+trigger: "when doing refactor with targeted file updates"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/whatToEat
+---
+
+# WhatToEat Workflow Refactor With Targeted File Updates
+
+## Action
+
+Follow the refactor-with-targeted-file-updates workflow:
+1. Identify performance or code quality improvements.
+2. Update implementation file(s) to apply refactor.
+3. Optionally update or verify related test files.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/app/*/page.tsx, src/components/*.tsx
+
+---
+id: whattoeat-instinct-file-naming
+trigger: "When creating a new file in the codebase"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct File Naming
+
+## Action
+
+Name the file using camelCase convention
+
+## Evidence
+
+- Pattern in src/app, src/components, src/lib files
+- Naming conventions section
+
+---
+id: whattoeat-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Function Naming
+
+## Action
+
+Name the function using camelCase convention
+
+## Evidence
+
+- Naming conventions in codeStyle
+- Pattern in src/lib/decision/*.ts
+
+---
+id: whattoeat-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase convention
+
+## Evidence
+
+- Naming conventions in codeStyle
+
+---
+id: whattoeat-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE convention
+
+## Evidence
+
+- Naming conventions in codeStyle
+
+---
+id: whattoeat-instinct-import-alias
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Import Alias
+
+## Action
+
+Use alias import style
+
+## Evidence
+
+- importStyle: alias in codeStyle
+
+---
+id: whattoeat-instinct-default-export
+trigger: "When exporting modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Default Export
+
+## Action
+
+Use default export style
+
+## Evidence
+
+- exportStyle: default in codeStyle
+
+---
+id: whattoeat-instinct-test-file-pattern
+trigger: "When creating a test file"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Test File Pattern
+
+## Action
+
+Name the file with the pattern *.test.ts or *.test.tsx and colocate with implementation
+
+## Evidence
+
+- testing.filePattern: *.test.ts
+- testLocation: colocated
+- Pattern in src/lib/decision/*.test.ts
+
+---
+id: whattoeat-instinct-test-framework
+trigger: "When writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Test Framework
+
+## Action
+
+Use Vitest as the testing framework
+
+## Evidence
+
+- testing.framework: vitest
+- vitest.config.ts present
+
+---
+id: whattoeat-instinct-mocking
+trigger: "When mocking dependencies in tests"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Mocking
+
+## Action
+
+Use vi.mock for mocking
+
+## Evidence
+
+- mockingStyle: vi.mock
+
+---
+id: whattoeat-instinct-test-types
+trigger: "When writing tests for a new feature/module"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Test Types
+
+## Action
+
+Include unit, integration, and e2e tests as appropriate
+
+## Evidence
+
+- testTypes: unit, integration, e2e
+- Pattern in test files
+
+---
+id: whattoeat-instinct-commit-format
+trigger: "When writing a commit message"
+confidence: 0.95
+domain: git
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Commit Format
+
+## Action
+
+Use Conventional Commits format with prefixes: feat, test, refactor, chore, docs
+
+## Evidence
+
+- commits.prefixes
+- Examples in commit history
+
+---
+id: whattoeat-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Commit Length
+
+## Action
+
+Keep the commit message concise (average ~47 characters)
+
+## Evidence
+
+- commits.averageLength: 47
+
+---
+id: whattoeat-instinct-feature-implementation-with-unit-tests
+trigger: "When adding a new feature, utility, or component"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Feature Implementation With Unit Tests
+
+## Action
+
+Create or update implementation file(s) and corresponding unit test file(s) alongside the implementation
+
+## Evidence
+
+- feature-implementation-with-unit-tests workflow
+- Pattern in src/lib/decision/*.ts and *.test.ts
+
+---
+id: whattoeat-instinct-api-endpoint-creation-with-tests
+trigger: "When exposing new backend functionality via an API route"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Api Endpoint Creation With Tests
+
+## Action
+
+Create new API route implementation file and corresponding test file; update supporting utilities and their tests if needed
+
+## Evidence
+
+- api-endpoint-creation-with-tests workflow
+- Pattern in src/app/api/*/route.ts and route.test.ts
+
+---
+id: whattoeat-instinct-ui-page-or-mode-creation
+trigger: "When adding a new page or user flow to the application"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Ui Page Or Mode Creation
+
+## Action
+
+Create or update page file, associated components, and corresponding test files
+
+## Evidence
+
+- ui-page-or-mode-creation-with-associated-components workflow
+- Pattern in src/app/*/page.tsx and src/components/*.tsx
+
+---
+id: whattoeat-instinct-refactor-targeted-update
+trigger: "When improving or optimizing existing code after initial implementation"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Refactor Targeted Update
+
+## Action
+
+Update implementation file(s) to apply refactor and optionally update or verify related test files
+
+## Evidence
+
+- refactor-with-targeted-file-updates workflow
+- Pattern in src/app/*/page.tsx and src/components/*.tsx
+
+---
+id: whattoeat-instinct-error-handling-try-catch
+trigger: "When handling errors in code"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/whatToEat
+---
+
+# Whattoeat Instinct Error Handling Try Catch
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- errorHandling.style: try-catch
+
