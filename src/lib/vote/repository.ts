@@ -8,7 +8,6 @@ export interface CreateSessionInput {
 export interface CastVoteInput {
   optionId: string;
   voterName: string;
-  type: "up" | "veto";
 }
 export interface SessionState {
   session: VoteSession;
@@ -74,7 +73,7 @@ export function createInMemoryVoteRepository(): VoteRepository {
       }
       existing.push({
         id: nextId(), sessionId, optionId: input.optionId,
-        voterName: input.voterName, type: input.type, createdAt: "",
+        voterName: input.voterName, createdAt: "",
       });
       votes.set(sessionId, existing);
       return { ok: true };

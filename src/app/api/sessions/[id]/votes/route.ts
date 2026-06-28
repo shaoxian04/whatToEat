@@ -27,23 +27,22 @@ export async function POST(
   }
 
   const { id } = await ctx.params;
-  let body: { voterName?: unknown; optionId?: unknown; type?: unknown };
+  let body: { voterName?: unknown; optionId?: unknown };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
   const voterName = typeof body.voterName === "string" ? body.voterName.trim() : "";
   const optionId = typeof body.optionId === "string" ? body.optionId : "";
-  const type = body.type;
 
-  if (!voterName || !optionId || (type !== "up" && type !== "veto")) {
-    return NextResponse.json({ error: "voterName, optionId and a valid type are required." }, { status: 400 });
+  if (!voterName || !optionId) {
+    return NextResponse.json({ error: "voterName and optionId are required." }, { status: 400 });
   }
   if (voterName.length > 80) {
     return NextResponse.json({ error: "voterName is too long." }, { status: 400 });
   }
 
   try {
-    const result = await getRepository().castVote(id, { voterName, optionId, type });
+    const result = await getRepository().castVote(id, { voterName, optionId });
     if (result.ok) return NextResponse.json({ ok: true });
     const status = result.reason === "not_found" ? 404
       : result.reason === "bad_option" ? 400

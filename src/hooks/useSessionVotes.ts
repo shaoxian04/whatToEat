@@ -14,7 +14,7 @@ interface State {
 function mapVoteRow(r: Record<string, unknown>): Vote {
   return {
     id: r.id as string, sessionId: r.session_id as string, optionId: r.option_id as string,
-    voterName: r.voter_name as string, type: r.type as "up" | "veto", createdAt: (r.created_at as string) ?? "",
+    voterName: r.voter_name as string, createdAt: (r.created_at as string) ?? "",
   };
 }
 

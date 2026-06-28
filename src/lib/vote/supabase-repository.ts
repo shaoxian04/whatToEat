@@ -22,7 +22,7 @@ function mapOption(r: Record<string, unknown>): VoteOption {
 function mapVote(r: Record<string, unknown>): Vote {
   return {
     id: r.id as string, sessionId: r.session_id as string, optionId: r.option_id as string,
-    voterName: r.voter_name as string, type: r.type as "up" | "veto", createdAt: r.created_at as string,
+    voterName: r.voter_name as string, createdAt: r.created_at as string,
   };
 }
 
@@ -71,7 +71,7 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
         .select("id").eq("id", input.optionId).eq("session_id", sessionId).maybeSingle();
       if (!opt) return { ok: false, reason: "bad_option" };
       const { error } = await client.from("votes").insert({
-        session_id: sessionId, option_id: input.optionId, voter_name: input.voterName, type: input.type,
+        session_id: sessionId, option_id: input.optionId, voter_name: input.voterName, type: "up",
       });
       if (error) {
         // 23505 = unique_violation -> duplicate vote

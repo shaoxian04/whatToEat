@@ -5,14 +5,14 @@ import type { VoteOption, Vote } from "@/lib/vote/types";
 function opt(id: string): VoteOption {
   return { id, sessionId: "s", placeId: null, name: id, snapshot: null };
 }
-function vote(optionId: string, voterName: string, type: "up" | "veto" = "up"): Vote {
-  return { id: `${optionId}-${voterName}`, sessionId: "s", optionId, voterName, type, createdAt: "" };
+function vote(optionId: string, voterName: string): Vote {
+  return { id: `${optionId}-${voterName}`, sessionId: "s", optionId, voterName, createdAt: "" };
 }
 
 describe("tallyVotes", () => {
-  it("counts up and veto per option", () => {
-    const t = tallyVotes([opt("a"), opt("b")], [vote("a", "x"), vote("a", "y"), vote("b", "z", "veto")]);
-    expect(t).toEqual({ a: { up: 2, veto: 0 }, b: { up: 0, veto: 1 } });
+  it("counts upvotes per option", () => {
+    const t = tallyVotes([opt("a"), opt("b")], [vote("a", "x"), vote("a", "y"), vote("b", "z")]);
+    expect(t).toEqual({ a: { up: 2 }, b: { up: 1 } });
   });
 });
 
@@ -23,15 +23,12 @@ describe("computeWinner", () => {
   it("picks the option with the most upvotes", () => {
     expect(computeWinner([opt("a"), opt("b")], [vote("a", "x"), vote("a", "y"), vote("b", "z")])).toBe("a");
   });
-  it("eliminates any option with a veto", () => {
-    // a has 2 up but 1 veto -> eliminated; b wins with 1 up
-    const votes = [vote("a", "x"), vote("a", "y"), vote("a", "z", "veto"), vote("b", "w")];
-    expect(computeWinner([opt("a"), opt("b")], votes)).toBe("b");
+  it("lets one voter upvote multiple options", () => {
+    // Al upvotes a and b; Bo upvotes a -> a wins with 2
+    const votes = [vote("a", "Al"), vote("b", "Al"), vote("a", "Bo")];
+    expect(computeWinner([opt("a"), opt("b")], votes)).toBe("a");
   });
-  it("returns null when every option is vetoed", () => {
-    expect(computeWinner([opt("a")], [vote("a", "x", "veto")])).toBeNull();
-  });
-  it("breaks ties deterministically via rng among leaders", () => {
+  it("breaks ties via rng among leaders", () => {
     const votes = [vote("a", "x"), vote("b", "y")]; // tie at 1 up each
     expect(computeWinner([opt("a"), opt("b")], votes, () => 0)).toBe("a");
     expect(computeWinner([opt("a"), opt("b")], votes, () => 0.99)).toBe("b");
