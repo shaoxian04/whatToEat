@@ -18,6 +18,19 @@ Mobile-friendly web app that helps you decide where to eat — random pick or fi
 
 - The Google API key is used only server-side in `src/app/api/nearby/route.ts`. Never expose it to the client.
 
+## Smart recommendations
+
+Restaurants are ranked by a **smart score**, not raw Google rating:
+
+- **Review-count-weighted rating** (Bayesian) so a place with 4.9 from 12 reviews
+  doesn't outrank a 4.5 from 3,000.
+- Combined with **distance** (closer is better) and **open-now**.
+- Powers **Browse** ordering, the **Surprise** pick (weighted random), and the
+  **"Vote with top picks"** group-vote shortcut.
+
+Weights live in `src/lib/decision/score.ts` (`DEFAULT_SCORE_CONFIG`) and are easy to tune.
+Only Google signals are used today; the engine is source-agnostic for future sources.
+
 ## Group voting (Plan 2)
 
 ### Requirements
