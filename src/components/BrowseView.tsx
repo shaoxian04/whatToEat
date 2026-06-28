@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
 import { applyFilters, type FilterCriteria } from "@/lib/decision/filter";
+import { rankRestaurants } from "@/lib/decision/score";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { FilterControls } from "@/components/FilterControls";
 import { BackHome } from "@/components/BackHome";
@@ -42,6 +43,11 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWit
   const filtered = useMemo(
     () => applyFilters(pool, origin, criteria),
     [pool, origin, criteria],
+  );
+
+  const ranked = useMemo(
+    () => rankRestaurants(filtered, origin).map((s) => s.restaurant),
+    [filtered, origin],
   );
 
   const toggle = useCallback((placeId: string) => {
@@ -90,7 +96,7 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWit
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {filtered.map((rst) => (
+          {ranked.map((rst) => (
             <RestaurantCard
               key={rst.placeId}
               restaurant={rst}

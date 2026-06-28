@@ -62,4 +62,17 @@ describe("BrowseView", () => {
     await screen.findByText("Alpha");
     expect(screen.queryByRole("button", { name: /to vote/i })).toBeNull();
   });
+
+  it("orders restaurants best-first by smart score", async () => {
+    const origin = { lat: 1.3, lng: 103.8 };
+    const pool = [
+      { placeId: "shiny", name: "shiny", rating: 4.9, userRatingCount: 4, priceLevel: null, lat: 1.3, lng: 103.8, openNow: null, types: [], photoRef: null },
+      { placeId: "credible", name: "credible", rating: 4.5, userRatingCount: 4000, priceLevel: null, lat: 1.3, lng: 103.8, openNow: null, types: [], photoRef: null },
+      { placeId: "low", name: "low", rating: 3.0, userRatingCount: 500, priceLevel: null, lat: 1.3, lng: 103.8, openNow: null, types: [], photoRef: null },
+    ];
+    render(<BrowseView origin={origin} autoStartCoords={origin} loadRestaurants={async () => pool} />);
+    const names = (await screen.findAllByRole("heading", { level: 2 })).map((h) => h.textContent);
+    expect(names[0]).toBe("credible");
+    expect(names.indexOf("credible")).toBeLessThan(names.indexOf("shiny"));
+  });
 });
