@@ -70,6 +70,16 @@ describe("VoteRoom", () => {
     expect(screen.getAllByRole("link", { name: /directions/i })).toHaveLength(1);
   });
 
+  it("shows the review count when the snapshot carries userRatingCount", () => {
+    const richOptions: VoteOption[] = [
+      { id: "o1", sessionId: "s1", placeId: "a", name: "Sushi",
+        snapshot: { placeId: "a", name: "Sushi", rating: 4.6, userRatingCount: 1234, priceLevel: 2, lat: 0, lng: 0, openNow: true, photoRef: null } },
+    ];
+    render(<VoteRoom sessionId="s1" initialSession={session} options={richOptions} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
+    expect(screen.getByText("★ 4.6 (1,234)")).toBeInTheDocument();
+  });
+
   it("falls back to name-only for options without a snapshot", () => {
     render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
       voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
