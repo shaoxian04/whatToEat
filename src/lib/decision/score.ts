@@ -70,3 +70,52 @@ export function scoreRestaurant(
     w.price * priceScore;
   return { restaurant: r, score, breakdown: { adjustedRating, ratingScore, distanceScore, openNowScore, priceScore } };
 }
+
+function mergeConfig(p: Partial<ScoreConfig>): ScoreConfig {
+  return {
+    ...DEFAULT_SCORE_CONFIG,
+    ...p,
+    weights: { ...DEFAULT_SCORE_CONFIG.weights, ...(p.weights ?? {}) },
+  };
+}
+
+function poolMeanRating(pool: Restaurant[], fallback: number): number {
+  const rated = pool.filter((r): r is Restaurant & { rating: number } => r.rating !== null);
+  if (rated.length === 0) return fallback;
+  return rated.reduce((sum, r) => sum + r.rating, 0) / rated.length;
+}
+
+export function rankRestaurants(
+  pool: Restaurant[],
+  origin: LatLng,
+  config: Partial<ScoreConfig> = {},
+): ScoredRestaurant[] {
+  const cfg = mergeConfig(config);
+  const poolMean = poolMeanRating(pool, cfg.priorMeanFallback);
+  return pool
+    .map((r) => scoreRestaurant(r, origin, poolMean, cfg))
+    .sort((a, b) => b.score - a.score);
+}
+
+export function weightedPick(
+  scored: ScoredRestaurant[],
+  rng: () => number = Math.random,
+  previousId?: string,
+): Restaurant | null {
+  if (scored.length === 0) return null;
+  const candidates =
+    previousId && scored.length > 1
+      ? scored.filter((s) => s.restaurant.placeId !== previousId)
+      : scored;
+  const weights = candidates.map((s) => Math.max(s.score, 0));
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  if (total <= 0) {
+    return candidates[Math.floor(rng() * candidates.length)].restaurant;
+  }
+  let threshold = rng() * total;
+  for (let i = 0; i < candidates.length; i++) {
+    threshold -= weights[i];
+    if (threshold < 0) return candidates[i].restaurant;
+  }
+  return candidates[candidates.length - 1].restaurant;
+}
