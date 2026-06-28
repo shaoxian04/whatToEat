@@ -9,6 +9,7 @@ import { FilterControls } from "@/components/FilterControls";
 import { BackHome } from "@/components/BackHome";
 
 const MAX_SELECTED = 50;
+const TOP_PICKS_N = 4;
 
 interface Props {
   loadRestaurants: (coords: LatLng) => Promise<Restaurant[]>;
@@ -64,6 +65,11 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWit
     onVoteWithTeam(pool.filter((rst) => selectedIds.has(rst.placeId)));
   }, [onVoteWithTeam, pool, selectedIds]);
 
+  const seedTopPicks = useCallback(() => {
+    if (!onVoteWithTeam) return;
+    onVoteWithTeam(ranked.slice(0, TOP_PICKS_N));
+  }, [onVoteWithTeam, ranked]);
+
   if (status === "loading")
     return (
       <main className="placemat flex min-h-screen flex-col items-center justify-center gap-2 px-5 text-center">
@@ -90,6 +96,15 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWit
       </div>
       <h1 className="font-display text-2xl font-extrabold leading-tight">Browse nearby</h1>
       <FilterControls value={criteria} onChange={setCriteria} />
+      {selectable && ranked.length >= 2 && (
+        <button
+          type="button"
+          onClick={seedTopPicks}
+          className="tile tile-press w-full bg-mustard px-4 py-3 text-center font-display text-lg font-bold text-ink"
+        >
+          ⭐ Vote with top {Math.min(TOP_PICKS_N, ranked.length)} picks
+        </button>
+      )}
       {filtered.length === 0 ? (
         <p className="tile bg-white p-4 text-center text-ink-soft">
           No restaurants match these filters. Try relaxing them.
