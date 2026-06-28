@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
-import { pickRandom } from "@/lib/decision/pick";
+import { rankRestaurants, weightedPick, type ScoredRestaurant } from "@/lib/decision/score";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { BackHome } from "@/components/BackHome";
 
@@ -22,7 +22,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random }: Props) {
-  const [pool, setPool] = useState<Restaurant[]>([]);
+  const [scored, setScored] = useState<ScoredRestaurant[]>([]);
   const [current, setCurrent] = useState<Restaurant | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
 
@@ -31,12 +31,13 @@ export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random
       setStatus("loading");
       try {
         const list = await loadRestaurants(coords);
-        setPool(list);
-        if (list.length === 0) {
+        const ranked = rankRestaurants(list, coords);
+        setScored(ranked);
+        if (ranked.length === 0) {
           setStatus("empty");
           return;
         }
-        setCurrent(pickRandom(list, undefined, rng));
+        setCurrent(weightedPick(ranked, rng));
         setStatus("ready");
       } catch {
         setStatus("error");
@@ -50,8 +51,8 @@ export function DecideView({ loadRestaurants, autoStartCoords, rng = Math.random
   }, [autoStartCoords, start]);
 
   const again = useCallback(
-    () => setCurrent(pickRandom(pool, current?.placeId, rng)),
-    [pool, current, rng],
+    () => setCurrent(weightedPick(scored, rng, current?.placeId)),
+    [scored, current, rng],
   );
 
   if (status === "loading")

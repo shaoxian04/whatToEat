@@ -30,7 +30,13 @@ export function RestaurantCard({ restaurant, selectable = false, selected = fals
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-xs font-medium">
         <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">
-          {restaurant.rating !== null ? `★ ${restaurant.rating}` : "No rating"}
+          {restaurant.rating !== null
+            ? `★ ${restaurant.rating}${
+                typeof restaurant.userRatingCount === "number"
+                  ? ` (${restaurant.userRatingCount.toLocaleString()})`
+                  : ""
+              }`
+            : "No rating"}
         </span>
         {restaurant.priceLevel !== null && (
           <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">

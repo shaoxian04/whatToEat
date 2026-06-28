@@ -48,6 +48,7 @@ describe("fetchNearby", () => {
         placeId: "place-1",
         name: "Sushi Spot",
         rating: 4.6,
+        userRatingCount: null,
         priceLevel: 2,
         lat: 1.3,
         lng: 103.8,
@@ -65,5 +66,26 @@ describe("fetchNearby", () => {
     await expect(
       fetchNearby({ lat: 0, lng: 0, radiusMeters: 500, apiKey: "K", fetchImpl }),
     ).rejects.toThrow("Places API error: 429");
+  });
+
+  it("requests userRatingCount in the field mask", async () => {
+    let mask = "";
+    const fetchImpl = (async (_url: string, init: RequestInit) => {
+      mask = (init.headers as Record<string, string>)["X-Goog-FieldMask"];
+      return { ok: true, json: async () => ({ places: [] }) };
+    }) as unknown as typeof fetch;
+    await fetchNearby({ lat: 1, lng: 2, radiusMeters: 1000, apiKey: "k", fetchImpl });
+    expect(mask).toContain("places.userRatingCount");
+  });
+
+  it("maps userRatingCount from the Places response", async () => {
+    const fetchImpl = (async () => ({
+      ok: true,
+      json: async () => ({
+        places: [{ id: "p1", displayName: { text: "P" }, rating: 4.5, userRatingCount: 1234, location: { latitude: 1, longitude: 2 } }],
+      }),
+    })) as unknown as typeof fetch;
+    const [r] = await fetchNearby({ lat: 1, lng: 2, radiusMeters: 1000, apiKey: "k", fetchImpl });
+    expect(r.userRatingCount).toBe(1234);
   });
 });
