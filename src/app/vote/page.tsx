@@ -28,15 +28,23 @@ export default function VoteEntryPage() {
   }, []);
 
   const onCreate = async (hostName: string, options: VoteOptionInput[]) => {
-    const res = await fetch("/api/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        hostName,
-        options: options.map((o) => ({ name: o.name, placeId: o.placeId ?? null, snapshot: o.snapshot ?? null })),
-      }),
-    });
-    if (!res.ok) return;
+    let res: Response;
+    try {
+      res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostName,
+          options: options.map((o) => ({ name: o.name, placeId: o.placeId ?? null, snapshot: o.snapshot ?? null })),
+        }),
+      });
+    } catch {
+      return "Couldn't reach the server. Check your connection and try again.";
+    }
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      return data.error ?? "Couldn't start the vote. Please try again.";
+    }
     const { sessionId, hostToken } = (await res.json()) as { sessionId: string; hostToken: string };
     if (typeof window !== "undefined") {
       localStorage.setItem(`whattoeat:host:${sessionId}`, hostToken);

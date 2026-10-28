@@ -37,7 +37,8 @@ export async function POST(
       return NextResponse.json({ error: result.error }, { status });
     }
     return NextResponse.json({ winnerId: result.winnerId });
-  } catch {
+  } catch (err) {
+    console.error("[close] close failed:", err);
     return NextResponse.json({ error: "Could not close the vote." }, { status: 500 });
   }
 }

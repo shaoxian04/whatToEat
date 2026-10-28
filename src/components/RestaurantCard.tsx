@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { Restaurant } from "@/lib/decision/types";
 import { priceLabel, mapsUrl } from "@/lib/restaurant-format";
 
@@ -10,9 +13,23 @@ interface Props {
 
 export function RestaurantCard({ restaurant, selectable = false, selected = false, onToggle }: Props) {
   const url = mapsUrl(restaurant.name, restaurant.placeId);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = !!restaurant.photoRef && !photoFailed;
 
   return (
     <div className={`ticket p-4 ${selectable && selected ? "ring-2 ring-herb" : ""}`}>
+      {showPhoto && (
+        // Plain <img>: the proxy 302s to a Google-hosted URL, which next/image can't optimise.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/api/photo?name=${encodeURIComponent(restaurant.photoRef!)}`}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setPhotoFailed(true)}
+          className="mb-3 aspect-[16/9] w-full rounded-md border-[1.5px] border-ink bg-paper-2 object-cover"
+        />
+      )}
       <div className="flex items-start justify-between gap-2">
         <h2 className="min-w-0 font-display text-lg font-bold leading-tight">{restaurant.name}</h2>
         {selectable && (

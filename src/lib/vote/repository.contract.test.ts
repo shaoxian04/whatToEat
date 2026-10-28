@@ -20,8 +20,8 @@ describe("VoteRepository contract (in-memory)", () => {
     const repo = createInMemoryVoteRepository();
     const { sessionId } = await repo.createSession({ hostName: "Sam", options: [{ name: "Sushi" }] });
     const optId = (await repo.getSession(sessionId))!.options[0].id;
-    expect(await repo.castVote(sessionId, { optionId: optId, voterName: "Al" })).toEqual({ ok: true });
-    expect(await repo.castVote(sessionId, { optionId: optId, voterName: "Al" })).toEqual({ ok: false, reason: "duplicate" });
+    expect(await repo.castVote(sessionId, { optionId: optId, voterName: "Al", voterId: "v-al" })).toEqual({ ok: true });
+    expect(await repo.castVote(sessionId, { optionId: optId, voterName: "Al", voterId: "v-al" })).toEqual({ ok: false, reason: "duplicate" });
   });
 
   it("closes a session with the correct host token, sets a winner, and rejects votes afterward", async () => {
@@ -29,10 +29,10 @@ describe("VoteRepository contract (in-memory)", () => {
     const { sessionId, hostToken } = await repo.createSession({ hostName: "Sam", options: [{ name: "Sushi" }, { name: "Pizza" }] });
     const opts = (await repo.getSession(sessionId))!.options;
     const sushi = opts.find((o) => o.name === "Sushi")!.id;
-    await repo.castVote(sessionId, { optionId: sushi, voterName: "Al" });
+    await repo.castVote(sessionId, { optionId: sushi, voterName: "Al", voterId: "v-al" });
     const closed = await repo.closeSession(sessionId, hostToken);
     expect(closed).toEqual({ winnerId: sushi });
-    expect(await repo.castVote(sessionId, { optionId: sushi, voterName: "Bo" })).toEqual({ ok: false, reason: "closed" });
+    expect(await repo.castVote(sessionId, { optionId: sushi, voterName: "Bo", voterId: "v-bo" })).toEqual({ ok: false, reason: "closed" });
   });
 
   it("rejects closeSession with the wrong host token (forbidden)", async () => {
@@ -54,5 +54,33 @@ describe("VoteRepository contract (in-memory)", () => {
     await repo.closeSession(sessionId, hostToken);
     const result = await repo.closeSession(sessionId, hostToken);
     expect(result).toEqual({ error: "already_closed" });
+  });
+
+  it("does not expose voter ids when reading a session", async () => {
+    const repo = createInMemoryVoteRepository();
+    const { sessionId } = await repo.createSession({ hostName: "Sam", options: [{ name: "Sushi" }] });
+    const optId = (await repo.getSession(sessionId))!.options[0].id;
+    await repo.castVote(sessionId, { optionId: optId, voterName: "Al", voterId: "secret-id" });
+    const vote = (await repo.getSession(sessionId))!.votes[0];
+    expect(vote).not.toHaveProperty("voterId");
+    expect(vote.voterName).toBe("Al");
+  });
+
+  it("lets one voter upvote several options but rejects a second browser using the same name", async () => {
+    const repo = createInMemoryVoteRepository();
+    const { sessionId } = await repo.createSession({ hostName: "Sam", options: [{ name: "Sushi" }, { name: "Pizza" }] });
+    const [a, b] = (await repo.getSession(sessionId))!.options.map((o) => o.id);
+    expect(await repo.castVote(sessionId, { optionId: a, voterName: "Al", voterId: "v1" })).toEqual({ ok: true });
+    expect(await repo.castVote(sessionId, { optionId: b, voterName: "Al", voterId: "v1" })).toEqual({ ok: true });
+    expect(await repo.castVote(sessionId, { optionId: b, voterName: "Al", voterId: "v2" }))
+      .toEqual({ ok: false, reason: "name_taken" });
+  });
+
+  it("rejects votes once the session has expired", async () => {
+    const repo = createInMemoryVoteRepository({ ttlMs: -1 });
+    const { sessionId } = await repo.createSession({ hostName: "Sam", options: [{ name: "Sushi" }] });
+    const optId = (await repo.getSession(sessionId))!.options[0].id;
+    expect(await repo.castVote(sessionId, { optionId: optId, voterName: "Al", voterId: "v1" }))
+      .toEqual({ ok: false, reason: "expired" });
   });
 });

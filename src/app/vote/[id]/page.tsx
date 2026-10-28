@@ -2,10 +2,33 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { VoteRoom } from "@/components/VoteRoom";
+import { VoteRoom, type CastOutcome } from "@/components/VoteRoom";
 import { StatusScreen } from "@/components/StatusScreen";
 import { BackHome } from "@/components/BackHome";
 import type { SessionState } from "@/lib/vote/repository";
+
+const VOTER_ID_KEY = "whattoeat:voter";
+
+// A random per-browser id, so a name can't be reused by someone else in the
+// same vote. Not authentication — just enough to stop accidental impersonation.
+function getVoterId(): string {
+  try {
+    const existing = localStorage.getItem(VOTER_ID_KEY);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    localStorage.setItem(VOTER_ID_KEY, id);
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+const CAST_ERRORS: Record<string, string> = {
+  closed: "Voting has closed.",
+  expired: "This vote has expired.",
+  not_found: "This vote no longer exists.",
+  bad_option: "That option isn't part of this vote.",
+};
 
 export default function VoteRoomPage() {
   const params = useParams<{ id: string }>();
@@ -46,22 +69,54 @@ export default function VoteRoomPage() {
   );
 
   const onCast = useCallback(
-    async (optionId: string) => {
-      await fetch(`/api/sessions/${sessionId}/votes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voterName, optionId }),
-      });
+    async (optionId: string): Promise<CastOutcome> => {
+      const name = voterName.trim();
+      let res: Response;
+      try {
+        res = await fetch(`/api/sessions/${sessionId}/votes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voterName: name, voterId: getVoterId(), optionId }),
+        });
+      } catch {
+        return { ok: false, message: "Couldn't record your vote. Check your connection and try again." };
+      }
+      if (res.ok) return { ok: true };
+      const { error } = (await res.json().catch(() => ({}))) as { error?: string };
+      if (error === "duplicate") return { ok: true }; // already counted
+      if (error === "name_taken") {
+        return { ok: false, rename: true, message: `Someone else is already voting as "${name}". Pick a different name.` };
+      }
+      return { ok: false, message: (error && CAST_ERRORS[error]) ?? "Couldn't record your vote. Please try again." };
     },
     [sessionId, voterName],
   );
 
-  const onClose = useCallback(async () => {
-    await fetch(`/api/sessions/${sessionId}/close`, {
-      method: "POST",
-      headers: hostToken ? { "x-host-token": hostToken } : {},
-    });
+  const onClose = useCallback(async (): Promise<string | null> => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/close`, {
+        method: "POST",
+        headers: hostToken ? { "x-host-token": hostToken } : {},
+      });
+      if (res.ok) return null;
+      const { error } = (await res.json().catch(() => ({}))) as { error?: string };
+      if (error === "already_closed") return null;
+      if (error === "forbidden") return "Only the person who started this vote can close it.";
+      return "Couldn't close the vote. Please try again.";
+    } catch {
+      return "Couldn't close the vote. Check your connection and try again.";
+    }
   }, [sessionId, hostToken]);
+
+  const onRename = useCallback(() => {
+    try {
+      localStorage.removeItem(`whattoeat:name:${sessionId}`);
+    } catch {
+      // storage unavailable: the join screen still works for this visit
+    }
+    setVoterName("");
+    setJoined(false);
+  }, [sessionId]);
 
   if (notFound) return <StatusScreen emoji="🥡" text="This lunch vote has ended or was not found." />;
   if (!state) return <StatusScreen emoji="🍜" text="Loading the vote…" />;
@@ -103,6 +158,7 @@ export default function VoteRoomPage() {
       voterName={voterName.trim()}
       onCast={onCast}
       onClose={onClose}
+      onRename={onRename}
       canClose={!!hostToken}
     />
   );

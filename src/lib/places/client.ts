@@ -88,3 +88,69 @@ export async function fetchNearby(params: NearbyParams): Promise<Restaurant[]> {
     }),
   );
 }
+
+// Photo resource names look like "places/{placeId}/photos/{photoId}".
+export const PHOTO_NAME_RE = /^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/;
+
+export interface PhotoParams {
+  name: string;
+  maxWidthPx: number;
+  apiKey: string;
+  fetchImpl?: typeof fetch;
+}
+
+// Resolves a photo resource name to a short-lived public image URL, so the API
+// key never reaches the browser.
+export async function fetchPhotoUri(params: PhotoParams): Promise<string> {
+  if (!PHOTO_NAME_RE.test(params.name)) throw new Error("Invalid photo name");
+  const doFetch = params.fetchImpl ?? fetch;
+  const url =
+    `https://places.googleapis.com/v1/${params.name}/media` +
+    `?maxWidthPx=${params.maxWidthPx}&skipHttpRedirect=true`;
+  const res = await doFetch(url, { headers: { "X-Goog-Api-Key": params.apiKey } });
+  if (!res.ok) throw new Error(`Places photo error: ${res.status}`);
+  const data = (await res.json()) as { photoUri?: string };
+  if (!data.photoUri) throw new Error("Places photo error: no photoUri");
+  return data.photoUri;
+}
+
+export interface AreaResult {
+  lat: number;
+  lng: number;
+  label: string;
+}
+
+export interface AreaParams {
+  query: string;
+  apiKey: string;
+  fetchImpl?: typeof fetch;
+}
+
+// Turns a typed area/address into coordinates (fallback when location is denied).
+export async function searchArea(params: AreaParams): Promise<AreaResult | null> {
+  const doFetch = params.fetchImpl ?? fetch;
+  const res = await doFetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": params.apiKey,
+      "X-Goog-FieldMask": "places.location,places.formattedAddress,places.displayName",
+    },
+    body: JSON.stringify({ textQuery: params.query, pageSize: 1 }),
+  });
+  if (!res.ok) throw new Error(`Places text search error: ${res.status}`);
+  const data = (await res.json()) as {
+    places?: {
+      location?: { latitude: number; longitude: number };
+      formattedAddress?: string;
+      displayName?: { text?: string };
+    }[];
+  };
+  const p = data.places?.[0];
+  if (!p?.location) return null;
+  return {
+    lat: p.location.latitude,
+    lng: p.location.longitude,
+    label: p.formattedAddress ?? p.displayName?.text ?? params.query,
+  };
+}

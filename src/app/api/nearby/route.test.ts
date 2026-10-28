@@ -4,7 +4,7 @@ vi.mock("@/lib/places/client", () => ({
   fetchNearby: vi.fn(),
 }));
 
-import { POST } from "@/app/api/nearby/route";
+import { POST, __clearNearbyCacheForTests } from "@/app/api/nearby/route";
 import { fetchNearby } from "@/lib/places/client";
 
 function makeReq(body: unknown, ip = "1.1.1.1"): Request {
@@ -17,6 +17,7 @@ function makeReq(body: unknown, ip = "1.1.1.1"): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __clearNearbyCacheForTests();
   process.env.GOOGLE_PLACES_API_KEY = "TEST_KEY";
 });
 
@@ -91,5 +92,20 @@ describe("POST /api/nearby", () => {
     const res = await POST(makeReq({ lat: 1.3, lng: 103.8, radiusMeters: 999999 }, "10.0.0.6"));
     expect(res.status).toBe(200);
     expect(vi.mocked(fetchNearby).mock.calls[0][0].radiusMeters).toBe(5000);
+  });
+
+  it("serves a repeat request for the same spot from cache", async () => {
+    vi.mocked(fetchNearby).mockResolvedValue([]);
+    await POST(makeReq({ lat: 1.30001, lng: 103.80001, radiusMeters: 1000 }, "7.7.7.7"));
+    const res = await POST(makeReq({ lat: 1.30002, lng: 103.80002, radiusMeters: 1000 }, "7.7.7.7"));
+    expect(res.status).toBe(200);
+    expect(vi.mocked(fetchNearby)).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not share cache entries across different radii", async () => {
+    vi.mocked(fetchNearby).mockResolvedValue([]);
+    await POST(makeReq({ lat: 1.3, lng: 103.8, radiusMeters: 1000 }, "8.8.8.8"));
+    await POST(makeReq({ lat: 1.3, lng: 103.8, radiusMeters: 3000 }, "8.8.8.8"));
+    expect(vi.mocked(fetchNearby)).toHaveBeenCalledTimes(2);
   });
 });
