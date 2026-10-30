@@ -27,6 +27,7 @@ interface RawPlace {
   id: string;
   displayName?: { text?: string };
   rating?: number;
+  userRatingCount?: number;
   priceLevel?: string;
   location?: { latitude: number; longitude: number };
   currentOpeningHours?: { openNow?: boolean };
@@ -38,6 +39,7 @@ const FIELD_MASK = [
   "places.id",
   "places.displayName",
   "places.rating",
+  "places.userRatingCount",
   "places.priceLevel",
   "places.location",
   "places.currentOpeningHours.openNow",
@@ -76,6 +78,7 @@ export async function fetchNearby(params: NearbyParams): Promise<Restaurant[]> {
       placeId: p.id,
       name: p.displayName?.text ?? "Unknown",
       rating: p.rating ?? null,
+      userRatingCount: p.userRatingCount ?? null,
       priceLevel: mapPriceLevel(p.priceLevel),
       lat: p.location?.latitude ?? 0,
       lng: p.location?.longitude ?? 0,

@@ -54,3 +54,16 @@ Then ensure Realtime is enabled for the `votes` and `sessions` tables in the Sup
 - All writes (create session, cast vote, close session) go through server API routes that use the **service-role key**, which bypasses Row Level Security (RLS).
 - Browsers receive only the **anon key** and use it for reads and Realtime subscriptions. Select-only RLS policies on `sessions`, `session_options`, and `votes` ensure browsers cannot write directly.
 - Host tokens are stored in `session_secrets`, which has RLS enabled with no anon policies **and** `REVOKE ALL … FROM anon, authenticated` as defense in depth. The anon key can never read host tokens.
+
+## Smart recommendations
+
+Restaurants are ranked by a **smart score**, not raw Google rating:
+
+- **Review-count-weighted rating** (Bayesian) so a place with 4.9 from 12 reviews
+  doesn't outrank a 4.5 from 3,000.
+- Combined with **distance** (closer is better) and **open-now**.
+- Powers **Browse** ordering, the **Surprise** pick (weighted random), and the
+  **"Vote with top picks"** group-vote shortcut.
+
+Weights live in `src/lib/decision/score.ts` (`DEFAULT_SCORE_CONFIG`) and are easy to tune.
+Only Google signals are used today; the engine is source-agnostic for future sources.

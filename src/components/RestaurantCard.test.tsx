@@ -53,3 +53,19 @@ describe("RestaurantCard", () => {
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 });
+
+it("shows the review count when present", () => {
+  render(<RestaurantCard restaurant={{
+    placeId: "p", name: "P", rating: 4.5, userRatingCount: 3000, priceLevel: null,
+    lat: 0, lng: 0, openNow: null, types: [], photoRef: null,
+  }} />);
+  expect(screen.getByText("★ 4.5 (3,000)")).toBeInTheDocument();
+});
+
+it("omits the count when userRatingCount is absent", () => {
+  render(<RestaurantCard restaurant={{
+    placeId: "p", name: "P", rating: 4.5, priceLevel: null,
+    lat: 0, lng: 0, openNow: null, types: [], photoRef: null,
+  }} />);
+  expect(screen.getByText("★ 4.5")).toBeInTheDocument();
+});

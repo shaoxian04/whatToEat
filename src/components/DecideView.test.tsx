@@ -31,4 +31,15 @@ describe("DecideView", () => {
     await userEvent.click(screen.getByRole("button", { name: /pick again/i }));
     expect(await screen.findByText("Beta")).toBeInTheDocument();
   });
+
+  it("favors the highest-scored restaurant when rng=0", async () => {
+    const origin = { lat: 1.3, lng: 103.8 };
+    const pool = [
+      { placeId: "shiny", name: "shiny", rating: 4.9, userRatingCount: 4, priceLevel: null, lat: 1.3, lng: 103.8, openNow: null, types: [], photoRef: null },
+      { placeId: "credible", name: "credible", rating: 4.5, userRatingCount: 4000, priceLevel: null, lat: 1.3, lng: 103.8, openNow: null, types: [], photoRef: null },
+      { placeId: "dive", name: "dive", rating: 2.5, userRatingCount: 300, priceLevel: null, lat: 1.3, lng: 103.8, openNow: null, types: [], photoRef: null },
+    ];
+    render(<DecideView autoStartCoords={origin} loadRestaurants={async () => pool} rng={() => 0} />);
+    expect(await screen.findByRole("heading", { level: 2 })).toHaveTextContent("credible");
+  });
 });

@@ -4,7 +4,7 @@ import { saveDraft, loadDraft, clearDraft, type DraftOption } from "@/lib/vote/d
 const KEY = "whattoeat:vote-draft";
 const pick = (placeId: string, name: string): DraftOption => ({
   name, placeId,
-  snapshot: { placeId, name, rating: 4, priceLevel: 2, lat: 0, lng: 0, openNow: true, photoRef: null },
+  snapshot: { placeId, name, rating: 4, userRatingCount: null, priceLevel: 2, lat: 0, lng: 0, openNow: true, photoRef: null },
 });
 
 describe("vote draft storage", () => {

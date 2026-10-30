@@ -108,7 +108,11 @@ export function VoteRoom({
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-xs font-medium">
                   {snap.rating !== null && (
                     <span className="rounded-full border-[1.5px] border-ink bg-paper-2 px-2 py-0.5">
-                      {`★ ${snap.rating}`}
+                      {`★ ${snap.rating}${
+                        typeof snap.userRatingCount === "number"
+                          ? ` (${snap.userRatingCount.toLocaleString()})`
+                          : ""
+                      }`}
                     </span>
                   )}
                   {snap.priceLevel !== null && (
