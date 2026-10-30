@@ -27,28 +27,33 @@ export async function POST(
   }
 
   const { id } = await ctx.params;
-  let body: { voterName?: unknown; optionId?: unknown };
+  let body: { voterName?: unknown; voterId?: unknown; optionId?: unknown };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
   const voterName = typeof body.voterName === "string" ? body.voterName.trim() : "";
+  const voterId = typeof body.voterId === "string" ? body.voterId.trim() : "";
   const optionId = typeof body.optionId === "string" ? body.optionId : "";
 
-  if (!voterName || !optionId) {
-    return NextResponse.json({ error: "voterName and optionId are required." }, { status: 400 });
+  if (!voterName || !voterId || !optionId) {
+    return NextResponse.json({ error: "voterName, voterId and optionId are required." }, { status: 400 });
   }
   if (voterName.length > 80) {
     return NextResponse.json({ error: "voterName is too long." }, { status: 400 });
   }
+  if (voterId.length > 64) {
+    return NextResponse.json({ error: "voterId is too long." }, { status: 400 });
+  }
 
   try {
-    const result = await getRepository().castVote(id, { voterName, optionId });
+    const result = await getRepository().castVote(id, { voterName, voterId, optionId });
     if (result.ok) return NextResponse.json({ ok: true });
     const status = result.reason === "not_found" ? 404
       : result.reason === "bad_option" ? 400
-      : 409; // duplicate | closed
+      : 409; // duplicate | closed | expired | name_taken
     return NextResponse.json({ error: result.reason }, { status });
-  } catch {
+  } catch (err) {
+    console.error("[votes] cast failed:", err);
     return NextResponse.json({ error: "Could not record your vote." }, { status: 500 });
   }
 }

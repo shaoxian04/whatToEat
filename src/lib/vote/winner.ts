@@ -21,3 +21,15 @@ export function computeWinner(
   const leaders = options.filter((o) => tally[o.id].up === max);
   return leaders[Math.floor(rng() * leaders.length)].id;
 }
+
+// How the winner was decided, so the UI can be honest about random tie-breaks.
+export type WinnerBasis = "most_votes" | "tie" | "no_votes";
+
+export function winnerBasis(options: VoteOption[], votes: Vote[]): WinnerBasis {
+  if (options.length === 0) return "no_votes";
+  const tally = tallyVotes(options, votes);
+  const max = Math.max(...options.map((o) => tally[o.id].up));
+  if (max === 0) return "no_votes";
+  const leaders = options.filter((o) => tally[o.id].up === max).length;
+  return leaders > 1 ? "tie" : "most_votes";
+}

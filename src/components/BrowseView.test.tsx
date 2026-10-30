@@ -91,4 +91,26 @@ describe("BrowseView", () => {
     expect(names[0]).toBe("credible");
     expect(names.indexOf("credible")).toBeLessThan(names.indexOf("shiny"));
   });
+
+  it("re-queries with the new radius when the distance changes", async () => {
+    const loader = vi.fn().mockResolvedValue([r({ placeId: "a", name: "Alpha" })]);
+    render(<BrowseView loadRestaurants={loader} origin={origin} autoStartCoords={origin} />);
+    await screen.findByText("Alpha");
+    expect(loader).toHaveBeenLastCalledWith(origin, 1500);
+    await userEvent.selectOptions(screen.getByLabelText(/maximum distance/i), "3000");
+    expect(loader).toHaveBeenLastCalledWith(origin, 3000);
+    expect(await screen.findByText("Alpha")).toBeInTheDocument();
+  });
+
+  it("filters by a cuisine found in the results", async () => {
+    const loader = vi.fn().mockResolvedValue([
+      r({ placeId: "a", name: "Alpha", types: ["restaurant", "japanese_restaurant"] }),
+      r({ placeId: "b", name: "Beta", types: ["restaurant", "italian_restaurant"] }),
+    ]);
+    render(<BrowseView loadRestaurants={loader} origin={origin} autoStartCoords={origin} />);
+    await screen.findByText("Alpha");
+    await userEvent.selectOptions(screen.getByLabelText(/cuisine/i), "italian_restaurant");
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+    expect(screen.getByText("Beta")).toBeInTheDocument();
+  });
 });

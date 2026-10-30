@@ -1,39 +1,45 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useSessionVotes } from "@/hooks/useSessionVotes";
-import type { Vote } from "@/lib/vote/types";
+import { useSessionVotes, type LiveState } from "@/hooks/useSessionVotes";
 
-// Fake Supabase channel that captures handlers and lets the test emit events.
-function makeFakeClient() {
-  const handlers: Record<string, (payload: { new: unknown }) => void> = {};
-  const channel = {
-    on(_evt: string, filter: { table: string }, cb: (p: { new: unknown }) => void) {
-      handlers[filter.table] = cb; return channel;
-    },
-    subscribe() { return channel; },
-  };
-  const client = { channel: () => channel, removeChannel: vi.fn() };
-  return { client, emit: (table: string, row: unknown) => handlers[table]?.({ new: row }) };
-}
+const initial: LiveState = { votes: [], status: "open", winnerOptionId: null };
+const vote = { id: "v1", sessionId: "s1", optionId: "o1", voterName: "Al", createdAt: "" };
 
-const initial = { votes: [] as Vote[], status: "open" as const, winnerOptionId: null };
+afterEach(() => vi.useRealTimers());
 
 describe("useSessionVotes", () => {
-  it("appends votes pushed over realtime", () => {
-    const { client, emit } = makeFakeClient();
-    const { result } = renderHook(() =>
-      useSessionVotes("s1", initial, () => client as never));
-    act(() => emit("votes", { id: "v1", session_id: "s1", option_id: "o1", voter_name: "Al", type: "up", created_at: "" }));
+  it("polls the session and picks up new votes", async () => {
+    vi.useFakeTimers();
+    const fetchState = vi.fn().mockResolvedValue({ ...initial, votes: [vote] });
+    const { result } = renderHook(() => useSessionVotes("s1", initial, fetchState, 1000));
+    expect(result.current.votes).toHaveLength(0);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(fetchState).toHaveBeenCalledWith("s1");
     expect(result.current.votes).toHaveLength(1);
-    expect(result.current.votes[0].voterName).toBe("Al");
   });
 
-  it("updates status + winner when the session row changes", () => {
-    const { client, emit } = makeFakeClient();
-    const { result } = renderHook(() =>
-      useSessionVotes("s1", initial, () => client as never));
-    act(() => emit("sessions", { id: "s1", status: "closed", winner_option_id: "o2" }));
+  it("refresh() updates status + winner immediately", async () => {
+    const fetchState = vi.fn().mockResolvedValue({ votes: [], status: "closed", winnerOptionId: "o2" });
+    const { result } = renderHook(() => useSessionVotes("s1", initial, fetchState, 60_000));
+    await act(async () => { await result.current.refresh!(); });
     expect(result.current.status).toBe("closed");
     expect(result.current.winnerOptionId).toBe("o2");
+  });
+
+  it("stops polling once the session is closed", async () => {
+    vi.useFakeTimers();
+    const fetchState = vi.fn().mockResolvedValue({ votes: [], status: "closed", winnerOptionId: null });
+    renderHook(() => useSessionVotes("s1", initial, fetchState, 1000));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(fetchState).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the last good state when a poll fails", async () => {
+    const fetchState = vi.fn().mockRejectedValue(new Error("offline"));
+    const start = { ...initial, votes: [vote] };
+    const { result } = renderHook(() => useSessionVotes("s1", start, fetchState, 60_000));
+    await act(async () => { await result.current.refresh!(); });
+    expect(result.current.votes).toHaveLength(1);
   });
 });

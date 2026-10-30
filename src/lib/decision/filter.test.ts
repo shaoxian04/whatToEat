@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyFilters } from "@/lib/decision/filter";
+import { applyFilters, cuisineOptions, cuisineLabel } from "@/lib/decision/filter";
 import type { Restaurant } from "@/lib/decision/types";
 
 const origin = { lat: 0, lng: 0 };
@@ -38,10 +38,28 @@ describe("applyFilters", () => {
     expect(out.map((x) => x.placeId)).toEqual(["keep"]);
   });
 
-  it("keeps items with null rating/price only when that criterion is unset", () => {
+  it("drops unrated places under a rating filter but keeps unknown-price places under a price filter", () => {
     const pool = [r({ placeId: "n", rating: null, priceLevel: null })];
     expect(applyFilters(pool, origin, {})).toHaveLength(1);
     expect(applyFilters(pool, origin, { minRating: 3 })).toHaveLength(0);
-    expect(applyFilters(pool, origin, { maxPriceLevel: 2 })).toHaveLength(0);
+    expect(applyFilters(pool, origin, { maxPriceLevel: 2 })).toHaveLength(1);
+  });
+});
+
+describe("cuisineOptions", () => {
+  it("lists cuisines from *_restaurant types, most common first, ignoring generic ones", () => {
+    const pool = [
+      r({ placeId: "a", types: ["restaurant", "japanese_restaurant"] }),
+      r({ placeId: "b", types: ["japanese_restaurant", "sushi_restaurant"] }),
+      r({ placeId: "c", types: ["fast_food_restaurant", "food"] }),
+    ];
+    expect(cuisineOptions(pool)).toEqual([
+      { value: "japanese_restaurant", label: "Japanese", count: 2 },
+      { value: "sushi_restaurant", label: "Sushi", count: 1 },
+    ]);
+  });
+
+  it("labels multi-word cuisines", () => {
+    expect(cuisineLabel("middle_eastern_restaurant")).toBe("Middle Eastern");
   });
 });

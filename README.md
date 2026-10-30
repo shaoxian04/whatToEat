@@ -1,6 +1,6 @@
 # whatToEat
 
-Mobile-friendly web app that helps you decide where to eat — random pick or filtered browse of nearby restaurants (Google Places). Group voting arrives in Plan 2.
+Mobile-friendly web app that helps you decide where to eat — random pick or filtered browse of nearby restaurants (Google Places). Plus group voting.
 
 ## Setup
 
@@ -16,7 +16,9 @@ Mobile-friendly web app that helps you decide where to eat — random pick or fi
 
 ## Notes
 
-- The Google API key is used only server-side in `src/app/api/nearby/route.ts`. Never expose it to the client.
+- The Google API key is used only server-side (`/api/nearby`, `/api/photo`, `/api/area`). Never expose it to the client.
+- If location is denied, Browse/Surprise offer an area search (Places Text Search).
+- Nearby results (5 min), photo URLs (1 h) and area lookups (1 day) are cached in-process to cut billed calls.
 
 ## Group voting (Plan 2)
 
@@ -32,27 +34,30 @@ A Supabase project is required. Set the following environment variables in `.env
 
 ### Database setup
 
-Apply the migration to your Supabase project:
+Apply the migrations to your Supabase project:
 
 ```
 supabase db push
 ```
 
-or copy `supabase/migrations/0001_group_voting.sql` into the Supabase SQL editor and run it.
+or run `supabase/migrations/0001_group_voting.sql` then `0002_hardening.sql` in the Supabase SQL editor.
+`0002` is required by the current code (it adds the `create_vote_session` function and `votes.voter_id`).
 
-Then ensure Realtime is enabled for the `votes` and `sessions` tables in the Supabase dashboard (Table Editor → Replication).
+Realtime is not used: the vote room polls `/api/sessions/<id>` every 3s while the tab is visible.
 
 ### Usage
 
 1. Open `/vote` to create a vote session and choose your food options.
 2. Share the `/vote/<id>` link with your group.
-3. Each person votes (up or veto) on the options.
-4. The host watches live results update in real time and can close the vote to reveal the winner.
+3. Each person upvotes any options they'd be happy with (one vote per option).
+4. Results refresh every few seconds; the host closes the vote to reveal the winner (ties and no-vote closes are picked at random, and the room says so).
+5. Votes expire after a day; sessions expired for over a week are cleaned up when new ones are created.
 
 ### Security model
 
-- All writes (create session, cast vote, close session) go through server API routes that use the **service-role key**, which bypasses Row Level Security (RLS).
-- Browsers receive only the **anon key** and use it for reads and Realtime subscriptions. Select-only RLS policies on `sessions`, `session_options`, and `votes` ensure browsers cannot write directly.
+- All reads and writes go through server API routes that use the **service-role key**, which bypasses Row Level Security (RLS). Browsers never talk to Supabase directly.
+- RLS is enabled on every table with **no** anon policies, so the anon key cannot list sessions or voter names.
+- Each browser gets a random voter id (localStorage). A name belongs to the first browser that votes with it in a session, which stops casual impersonation; voter ids are never returned to clients.
 - Host tokens are stored in `session_secrets`, which has RLS enabled with no anon policies **and** `REVOKE ALL … FROM anon, authenticated` as defense in depth. The anon key can never read host tokens.
 
 ## Smart recommendations

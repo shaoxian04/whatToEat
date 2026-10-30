@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fetchNearby, mapPriceLevel } from "@/lib/places/client";
+import { fetchNearby, mapPriceLevel, fetchPhotoUri, searchArea } from "@/lib/places/client";
 
 const sampleResponse = {
   places: [
@@ -87,5 +87,45 @@ describe("fetchNearby", () => {
     })) as unknown as typeof fetch;
     const [r] = await fetchNearby({ lat: 1, lng: 2, radiusMeters: 1000, apiKey: "k", fetchImpl });
     expect(r.userRatingCount).toBe(1234);
+  });
+});
+
+describe("fetchPhotoUri", () => {
+  it("requests the media endpoint with the key in a header and returns photoUri", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ photoUri: "https://lh3.example/photo" }),
+    } as Response);
+    const uri = await fetchPhotoUri({ name: "places/p1/photos/abc", maxWidthPx: 400, apiKey: "SECRET", fetchImpl });
+    expect(uri).toBe("https://lh3.example/photo");
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe("https://places.googleapis.com/v1/places/p1/photos/abc/media?maxWidthPx=400&skipHttpRedirect=true");
+    expect(url).not.toContain("SECRET");
+    expect((init.headers as Record<string, string>)["X-Goog-Api-Key"]).toBe("SECRET");
+  });
+
+  it("rejects malformed photo names without calling upstream", async () => {
+    const fetchImpl = vi.fn();
+    await expect(
+      fetchPhotoUri({ name: "../../evil", maxWidthPx: 400, apiKey: "K", fetchImpl }),
+    ).rejects.toThrow();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe("searchArea", () => {
+  it("returns the first match's coordinates and address", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        places: [{ location: { latitude: 3.1, longitude: 101.7 }, formattedAddress: "Bukit Bintang, KL" }],
+      }),
+    } as Response);
+    expect(await searchArea({ query: "bukit bintang", apiKey: "K", fetchImpl }))
+      .toEqual({ lat: 3.1, lng: 101.7, label: "Bukit Bintang, KL" });
+  });
+
+  it("returns null when nothing matches", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
+    expect(await searchArea({ query: "zzzz", apiKey: "K", fetchImpl })).toBeNull();
   });
 });

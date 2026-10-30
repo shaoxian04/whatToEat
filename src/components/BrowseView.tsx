@@ -2,44 +2,59 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { LatLng, Restaurant } from "@/lib/decision/types";
-import { applyFilters, type FilterCriteria } from "@/lib/decision/filter";
+import { applyFilters, cuisineOptions, type FilterCriteria } from "@/lib/decision/filter";
 import { rankRestaurants } from "@/lib/decision/score";
 import { RestaurantCard } from "@/components/RestaurantCard";
-import { FilterControls } from "@/components/FilterControls";
+import { FilterControls, DEFAULT_DISTANCE } from "@/components/FilterControls";
 import { BackHome } from "@/components/BackHome";
 
 const MAX_SELECTED = 50;
 const TOP_PICKS_N = 4;
 
 interface Props {
-  loadRestaurants: (coords: LatLng) => Promise<Restaurant[]>;
+  loadRestaurants: (coords: LatLng, radiusMeters: number) => Promise<Restaurant[]>;
   origin: LatLng;
   autoStartCoords?: LatLng;
   onVoteWithTeam?: (picks: Restaurant[]) => void;
+  areaLabel?: string;
+  onChangeArea?: () => void;
 }
 
-export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWithTeam }: Props) {
+export function BrowseView({
+  loadRestaurants, origin, autoStartCoords, onVoteWithTeam, areaLabel, onChangeArea,
+}: Props) {
   const [pool, setPool] = useState<Restaurant[]>([]);
   const [criteria, setCriteria] = useState<FilterCriteria>({});
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const radius = criteria.maxDistanceMeters ?? DEFAULT_DISTANCE;
+  const hasLoaded = pool.length > 0 || status === "ready";
 
   const start = useCallback(
-    async (coords: LatLng) => {
-      setStatus("loading");
+    async (coords: LatLng, radiusMeters: number, initial: boolean) => {
+      if (initial) setStatus("loading");
+      else setRefreshing(true);
       try {
-        setPool(await loadRestaurants(coords));
+        setPool(await loadRestaurants(coords, radiusMeters));
         setStatus("ready");
       } catch {
         setStatus("error");
+      } finally {
+        setRefreshing(false);
       }
     },
     [loadRestaurants],
   );
 
+  // The search radius is a fetch parameter (Google returns the top 20 within
+  // it), so changing distance re-queries instead of just filtering.
   useEffect(() => {
-    if (autoStartCoords) void start(autoStartCoords);
-  }, [autoStartCoords, start]);
+    if (autoStartCoords) void start(autoStartCoords, radius, !hasLoaded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hasLoaded only picks the loading style
+  }, [autoStartCoords, start, radius]);
+
+  const cuisines = useMemo(() => cuisineOptions(pool), [pool]);
 
   const filtered = useMemo(
     () => applyFilters(pool, origin, criteria),
@@ -92,10 +107,24 @@ export function BrowseView({ loadRestaurants, origin, autoStartCoords, onVoteWit
     <main className="placemat mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-5 py-8">
       <div className="flex items-center justify-between">
         <BackHome />
-        <span className="font-mono text-xs text-ink-soft">{filtered.length} spots</span>
+        <span className="font-mono text-xs text-ink-soft" aria-live="polite">
+          {refreshing ? "Searching…" : `${filtered.length} spots`}
+        </span>
       </div>
-      <h1 className="font-display text-2xl font-extrabold leading-tight">Browse nearby</h1>
-      <FilterControls value={criteria} onChange={setCriteria} />
+      <div>
+        <h1 className="font-display text-2xl font-extrabold leading-tight">Browse nearby</h1>
+        {(areaLabel || onChangeArea) && (
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 font-mono text-xs text-ink-soft">
+            {areaLabel && <span className="min-w-0 truncate">📍 {areaLabel}</span>}
+            {onChangeArea && (
+              <button type="button" onClick={onChangeArea} className="font-bold text-tomato-ink underline">
+                Change area
+              </button>
+            )}
+          </p>
+        )}
+      </div>
+      <FilterControls value={criteria} onChange={setCriteria} cuisines={cuisines} />
       {selectable && ranked.length >= 2 && (
         <button
           type="button"

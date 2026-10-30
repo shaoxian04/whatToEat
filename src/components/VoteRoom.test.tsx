@@ -86,4 +86,68 @@ describe("VoteRoom", () => {
     expect(screen.queryByRole("link", { name: /directions/i })).toBeNull();
     expect(screen.getByText("Sushi")).toBeInTheDocument();
   });
+
+  it("marks an option as voted after a successful upvote", async () => {
+    const onCast = vi.fn().mockResolvedValue({ ok: true });
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
+      voterName="Bo" onCast={onCast} onClose={vi.fn()} subscribe={stubSubscribe} canClose={false} />);
+    await userEvent.click(screen.getByRole("button", { name: /upvote sushi/i }));
+    const voted = await screen.findByRole("button", { name: /you upvoted sushi/i });
+    expect(voted).toBeDisabled();
+  });
+
+  it("shows options this voter already upvoted as voted", () => {
+    const votes: Vote[] = [{ id: "v1", sessionId: "s1", optionId: "o2", voterName: "Bo", createdAt: "" }];
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={votes}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={false} />);
+    expect(screen.getByRole("button", { name: /you upvoted pizza/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /upvote sushi/i })).toBeEnabled();
+  });
+
+  it("shows the error and a rename button when the name is taken", async () => {
+    const onCast = vi.fn().mockResolvedValue({ ok: false, message: "Name taken", rename: true });
+    const onRename = vi.fn();
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
+      voterName="Bo" onCast={onCast} onClose={vi.fn()} onRename={onRename} subscribe={stubSubscribe} canClose={false} />);
+    await userEvent.click(screen.getByRole("button", { name: /upvote sushi/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Name taken");
+    await userEvent.click(screen.getByRole("button", { name: /change my name/i }));
+    expect(onRename).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /upvote sushi/i })).toBeEnabled();
+  });
+
+  it("shows an error when closing fails", async () => {
+    const onClose = vi.fn().mockResolvedValue("Only the host can close it.");
+    render(<VoteRoom sessionId="s1" initialSession={session} options={options} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={onClose} subscribe={stubSubscribe} canClose={true} />);
+    await userEvent.click(screen.getByRole("button", { name: /close voting/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Only the host can close it.");
+  });
+
+  it("explains a random pick when the vote closed with no votes", () => {
+    const closed: VoteSession = { ...session, status: "closed", winnerOptionId: "o1" };
+    render(<VoteRoom sessionId="s1" initialSession={closed} options={options} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={false} />);
+    expect(screen.getByText(/nobody voted/i)).toBeInTheDocument();
+  });
+
+  it("explains a random pick when the vote closed on a tie", () => {
+    const closed: VoteSession = { ...session, status: "closed", winnerOptionId: "o1" };
+    const votes: Vote[] = [
+      { id: "v1", sessionId: "s1", optionId: "o1", voterName: "Al", createdAt: "" },
+      { id: "v2", sessionId: "s1", optionId: "o2", voterName: "Bo", createdAt: "" },
+    ];
+    render(<VoteRoom sessionId="s1" initialSession={closed} options={options} initialVotes={votes}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={false} />);
+    expect(screen.getByText(/it was a tie/i)).toBeInTheDocument();
+  });
+
+  it("hides vote buttons and explains when the vote has expired", () => {
+    const expired: VoteSession = { ...session, expiresAt: "2000-01-01T00:00:00Z" };
+    render(<VoteRoom sessionId="s1" initialSession={expired} options={options} initialVotes={[]}
+      voterName="Bo" onCast={vi.fn()} onClose={vi.fn()} subscribe={stubSubscribe} canClose={true} />);
+    expect(screen.getByText(/this vote has expired/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /upvote sushi/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /close voting/i })).toBeInTheDocument();
+  });
 });

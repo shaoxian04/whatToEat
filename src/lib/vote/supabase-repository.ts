@@ -4,6 +4,7 @@ import type {
 } from "@/lib/vote/repository";
 import type { VoteSession, VoteOption, Vote } from "@/lib/vote/types";
 import { computeWinner } from "@/lib/vote/winner";
+import { isExpired } from "@/lib/vote/repository";
 
 function mapSession(r: Record<string, unknown>): VoteSession {
   return {
@@ -34,28 +35,27 @@ function mapVote(r: Record<string, unknown>): Vote {
 export function createSupabaseVoteRepository(client: SupabaseClient): VoteRepository {
   return {
     async createSession(input: CreateSessionInput) {
-      const { data: session, error } = await client
-        .from("sessions").insert({ host_name: input.hostName }).select().single();
-      if (error || !session) throw new Error("create session failed");
-      const rows = input.options.map((o) => ({
-        session_id: session.id, name: o.name, place_id: o.placeId ?? null, snapshot: o.snapshot ?? null,
-      }));
-      const { error: optErr } = await client.from("session_options").insert(rows);
-      if (optErr) throw new Error("create options failed");
-      const { data: secret, error: secretErr } = await client
-        .from("session_secrets")
-        .insert({ session_id: session.id })
-        .select("host_token")
-        .single();
-      if (secretErr || !secret) throw new Error("create session secret failed");
-      return { sessionId: session.id as string, hostToken: (secret as Record<string, unknown>).host_token as string };
+      // One RPC = one transaction: no orphaned sessions if an insert fails.
+      const { data, error } = await client.rpc("create_vote_session", {
+        p_host_name: input.hostName,
+        p_options: input.options.map((o) => ({
+          name: o.name, placeId: o.placeId ?? null, snapshot: o.snapshot ?? null,
+        })),
+      });
+      const row = (Array.isArray(data) ? data[0] : data) as
+        { session_id?: string; host_token?: string } | null;
+      if (error || !row?.session_id || !row.host_token) {
+        throw new Error(`create session failed: ${error?.message ?? "no row returned"}`);
+      }
+      return { sessionId: row.session_id, hostToken: row.host_token };
     },
     async getSession(sessionId: string): Promise<SessionState | null> {
       const { data: s } = await client.from("sessions").select().eq("id", sessionId).maybeSingle();
       if (!s) return null;
       const { data: opts, error: optsErr } = await client.from("session_options").select().eq("session_id", sessionId);
       if (optsErr) throw new Error(`fetch options failed: ${optsErr.message}`);
-      const { data: vts, error: vtsErr } = await client.from("votes").select().eq("session_id", sessionId);
+      const { data: vts, error: vtsErr } = await client.from("votes")
+        .select("id, session_id, option_id, voter_name, created_at").eq("session_id", sessionId);
       if (vtsErr) throw new Error(`fetch votes failed: ${vtsErr.message}`);
       return {
         session: mapSession(s),
@@ -64,19 +64,26 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
       };
     },
     async castVote(sessionId: string, input: CastVoteInput): Promise<CastVoteResult> {
-      const { data: s } = await client.from("sessions").select("status").eq("id", sessionId).maybeSingle();
+      const { data: s } = await client.from("sessions").select().eq("id", sessionId).maybeSingle();
       if (!s) return { ok: false, reason: "not_found" };
       if (s.status === "closed") return { ok: false, reason: "closed" };
+      if (isExpired(mapSession(s))) return { ok: false, reason: "expired" };
       const { data: opt } = await client.from("session_options")
         .select("id").eq("id", input.optionId).eq("session_id", sessionId).maybeSingle();
       if (!opt) return { ok: false, reason: "bad_option" };
+      // A name belongs to the first browser that voted with it in this session.
+      const { data: clash } = await client.from("votes")
+        .select("id").eq("session_id", sessionId).eq("voter_name", input.voterName)
+        .neq("voter_id", input.voterId).limit(1);
+      if (clash && clash.length > 0) return { ok: false, reason: "name_taken" };
       const { error } = await client.from("votes").insert({
-        session_id: sessionId, option_id: input.optionId, voter_name: input.voterName, type: "up",
+        session_id: sessionId, option_id: input.optionId,
+        voter_name: input.voterName, voter_id: input.voterId, type: "up",
       });
       if (error) {
         // 23505 = unique_violation -> duplicate vote
         if ((error as { code?: string }).code === "23505") return { ok: false, reason: "duplicate" };
-        throw new Error("cast vote failed");
+        throw new Error(`cast vote failed: ${error.message}`);
       }
       return { ok: true };
     },
@@ -94,14 +101,18 @@ export function createSupabaseVoteRepository(client: SupabaseClient): VoteReposi
       if (s.status === "closed") return { error: "already_closed" };
       const { data: optRows, error: optsErr } = await client.from("session_options").select().eq("session_id", sessionId);
       if (optsErr) throw new Error(`fetch options failed: ${optsErr.message}`);
-      const { data: voteRows, error: vtsErr } = await client.from("votes").select().eq("session_id", sessionId);
+      const { data: voteRows, error: vtsErr } = await client.from("votes")
+        .select("id, session_id, option_id, voter_name, created_at").eq("session_id", sessionId);
       if (vtsErr) throw new Error(`fetch votes failed: ${vtsErr.message}`);
       const options = (optRows ?? []).map(mapOption);
       const votes = (voteRows ?? []).map(mapVote);
       const winnerId = computeWinner(options, votes);
-      const { error } = await client.from("sessions")
-        .update({ status: "closed", winner_option_id: winnerId }).eq("id", sessionId);
-      if (error) throw new Error("close failed");
+      // Conditional on still being open, so two racing closes can't both win.
+      const { data: updated, error } = await client.from("sessions")
+        .update({ status: "closed", winner_option_id: winnerId })
+        .eq("id", sessionId).eq("status", "open").select("id");
+      if (error) throw new Error(`close failed: ${error.message}`);
+      if (!updated || updated.length === 0) return { error: "already_closed" };
       return { winnerId };
     },
   };

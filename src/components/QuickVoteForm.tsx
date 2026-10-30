@@ -10,7 +10,8 @@ export interface VoteOptionInput {
 }
 
 interface Props {
-  onCreate: (hostName: string, options: VoteOptionInput[]) => Promise<void>;
+  // Resolves to an error message on failure, or nothing on success.
+  onCreate: (hostName: string, options: VoteOptionInput[]) => Promise<string | null | void>;
   initialOptions?: VoteOptionInput[];
 }
 
@@ -19,6 +20,7 @@ export function QuickVoteForm({ onCreate, initialOptions }: Props) {
   const [picks, setPicks] = useState<VoteOptionInput[]>(initialOptions ?? []);
   const [texts, setTexts] = useState<string[]>((initialOptions?.length ?? 0) >= 2 ? [] : ["", ""]);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const setText = (i: number, val: string) =>
     setTexts((prev) => prev.map((o, idx) => (idx === i ? val : o)));
@@ -37,7 +39,15 @@ export function QuickVoteForm({ onCreate, initialOptions }: Props) {
       return;
     }
     setError(null);
-    await onCreate(hostName.trim(), all);
+    setSubmitting(true);
+    try {
+      const message = await onCreate(hostName.trim(), all);
+      if (message) setError(message);
+    } catch {
+      setError("Couldn't start the vote. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -97,15 +107,16 @@ export function QuickVoteForm({ onCreate, initialOptions }: Props) {
       </button>
 
       {error && (
-        <p className="tile-sm bg-tomato/15 px-3 py-2 text-sm font-semibold text-tomato-ink">{error}</p>
+        <p role="alert" className="tile-sm bg-tomato/15 px-3 py-2 text-sm font-semibold text-tomato-ink">{error}</p>
       )}
 
       <button
         type="button"
         onClick={submit}
-        className="tile tile-press mt-1 bg-herb px-4 py-3 font-display text-lg font-bold text-ink"
+        disabled={submitting}
+        className="tile tile-press mt-1 bg-herb px-4 py-3 font-display text-lg font-bold text-ink disabled:opacity-60"
       >
-        Start vote
+        {submitting ? "Starting…" : "Start vote"}
       </button>
     </main>
   );

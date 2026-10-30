@@ -8,6 +8,7 @@ export interface CreateSessionInput {
 export interface CastVoteInput {
   optionId: string;
   voterName: string;
+  voterId: string; // per-browser id; never returned to clients
 }
 export interface SessionState {
   session: VoteSession;
@@ -16,10 +17,16 @@ export interface SessionState {
 }
 export type CastVoteResult =
   | { ok: true }
-  | { ok: false; reason: "duplicate" | "closed" | "not_found" | "bad_option" };
+  | { ok: false; reason: "duplicate" | "closed" | "expired" | "not_found" | "bad_option" | "name_taken" };
 export type CloseResult =
   | { winnerId: string | null }
   | { error: "not_found" | "already_closed" | "forbidden" };
+
+export function isExpired(session: VoteSession, now: number = Date.now()): boolean {
+  if (!session.expiresAt) return false;
+  const t = Date.parse(session.expiresAt);
+  return Number.isFinite(t) && t <= now;
+}
 
 export interface VoteRepository {
   createSession(input: CreateSessionInput): Promise<{ sessionId: string; hostToken: string }>;
@@ -34,11 +41,11 @@ function makeIdFactory() {
   return () => `id-${++n}`;
 }
 
-export function createInMemoryVoteRepository(): VoteRepository {
+export function createInMemoryVoteRepository(config: { ttlMs?: number } = {}): VoteRepository {
   const nextId = makeIdFactory();
   const sessions = new Map<string, VoteSession>();
   const options = new Map<string, VoteOption[]>();
-  const votes = new Map<string, Vote[]>();
+  const votes = new Map<string, (Vote & { voterId: string })[]>();
   const hostTokens = new Map<string, string>();
 
   return {
@@ -47,7 +54,8 @@ export function createInMemoryVoteRepository(): VoteRepository {
       const hostToken = `host-${nextId()}`;
       sessions.set(sessionId, {
         id: sessionId, hostName: input.hostName, status: "open",
-        winnerOptionId: null, expiresAt: "",
+        winnerOptionId: null,
+        expiresAt: config.ttlMs !== undefined ? new Date(Date.now() + config.ttlMs).toISOString() : "",
       });
       options.set(sessionId, input.options.map((o) => ({
         id: nextId(), sessionId, placeId: o.placeId ?? null, name: o.name, snapshot: o.snapshot ?? null,
@@ -59,21 +67,26 @@ export function createInMemoryVoteRepository(): VoteRepository {
     async getSession(sessionId) {
       const session = sessions.get(sessionId);
       if (!session) return null;
-      return { session, options: options.get(sessionId) ?? [], votes: votes.get(sessionId) ?? [] };
+      const publicVotes = (votes.get(sessionId) ?? []).map(({ voterId: _voterId, ...v }) => v);
+      return { session, options: options.get(sessionId) ?? [], votes: publicVotes };
     },
     async castVote(sessionId, input) {
       const session = sessions.get(sessionId);
       if (!session) return { ok: false, reason: "not_found" };
       if (session.status === "closed") return { ok: false, reason: "closed" };
+      if (isExpired(session)) return { ok: false, reason: "expired" };
       const opts = options.get(sessionId) ?? [];
       if (!opts.some((o) => o.id === input.optionId)) return { ok: false, reason: "bad_option" };
       const existing = votes.get(sessionId) ?? [];
-      if (existing.some((v) => v.optionId === input.optionId && v.voterName === input.voterName)) {
+      if (existing.some((v) => v.voterName === input.voterName && v.voterId !== input.voterId)) {
+        return { ok: false, reason: "name_taken" };
+      }
+      if (existing.some((v) => v.optionId === input.optionId && v.voterId === input.voterId)) {
         return { ok: false, reason: "duplicate" };
       }
       existing.push({
         id: nextId(), sessionId, optionId: input.optionId,
-        voterName: input.voterName, createdAt: "",
+        voterName: input.voterName, voterId: input.voterId, createdAt: "",
       });
       votes.set(sessionId, existing);
       return { ok: true };

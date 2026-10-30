@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeWinner, tallyVotes } from "@/lib/vote/winner";
+import { computeWinner, tallyVotes, winnerBasis } from "@/lib/vote/winner";
 import type { VoteOption, Vote } from "@/lib/vote/types";
 
 function opt(id: string): VoteOption {
@@ -32,5 +32,23 @@ describe("computeWinner", () => {
     const votes = [vote("a", "x"), vote("b", "y")]; // tie at 1 up each
     expect(computeWinner([opt("a"), opt("b")], votes, () => 0)).toBe("a");
     expect(computeWinner([opt("a"), opt("b")], votes, () => 0.99)).toBe("b");
+  });
+});
+
+describe("winnerBasis", () => {
+  const opts = [
+    { id: "a", sessionId: "s", placeId: null, name: "A", snapshot: null },
+    { id: "b", sessionId: "s", placeId: null, name: "B", snapshot: null },
+  ];
+  const v = (optionId: string, voterName: string) => ({ id: voterName + optionId, sessionId: "s", optionId, voterName, createdAt: "" });
+
+  it("is no_votes when nobody voted", () => {
+    expect(winnerBasis(opts, [])).toBe("no_votes");
+  });
+  it("is tie when the top count is shared", () => {
+    expect(winnerBasis(opts, [v("a", "Al"), v("b", "Bo")])).toBe("tie");
+  });
+  it("is most_votes for a clear leader", () => {
+    expect(winnerBasis(opts, [v("a", "Al"), v("a", "Bo"), v("b", "Cy")])).toBe("most_votes");
   });
 });

@@ -19,7 +19,8 @@ export async function GET(
     const state = await getRepository().getSession(id);
     if (!state) return NextResponse.json({ error: "This lunch vote was not found." }, { status: 404 });
     return NextResponse.json(state);
-  } catch {
+  } catch (err) {
+    console.error("[sessions] get failed:", err);
     return NextResponse.json({ error: "Could not load the vote." }, { status: 500 });
   }
 }

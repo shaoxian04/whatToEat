@@ -69,3 +69,19 @@ it("omits the count when userRatingCount is absent", () => {
   }} />);
   expect(screen.getByText("★ 4.5")).toBeInTheDocument();
 });
+
+describe("RestaurantCard photo", () => {
+  it("shows the restaurant photo through the server proxy when it has one", () => {
+    const { container } = render(
+      <RestaurantCard restaurant={{ ...base, photoRef: "places/p1/photos/abc" }} />,
+    );
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("src")).toBe("/api/photo?name=places%2Fp1%2Fphotos%2Fabc");
+    expect(img?.getAttribute("loading")).toBe("lazy");
+  });
+
+  it("renders no photo when there is no photoRef", () => {
+    const { container } = render(<RestaurantCard restaurant={{ ...base, photoRef: null }} />);
+    expect(container.querySelector("img")).toBeNull();
+  });
+});
